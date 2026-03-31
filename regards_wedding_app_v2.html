@@ -1,0 +1,514 @@
+
+<div style="display: flex; justify-content: center; padding: 1.5rem 0;">
+<div style="width: 390px;">
+
+<div style="background: var(--color-background-secondary); border-radius: var(--border-radius-lg); padding: 20px 14px 14px; border: 0.5px solid var(--color-border-tertiary);">
+
+<div style="text-align: center; margin-bottom: 6px;">
+  <span style="font-size: 11px; color: var(--color-text-tertiary); letter-spacing: 0.6px;">PROTOTYPE INTERACTIF — NAVIGUER VIA LES POINTS</span>
+</div>
+
+<div id="phone" style="background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); overflow: hidden; min-height: 700px; position: relative;">
+
+  <!-- SCREEN 1: WELCOME -->
+  <div id="s-welcome" class="screen" style="display: flex; flex-direction: column; min-height: 700px;">
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.5rem 1rem; position: relative; overflow: hidden;">
+      <div style="position: absolute; top: -10px; left: -10px; width: 90px; height: 90px; opacity: 0.15;">
+        <svg viewBox="0 0 100 100" fill="none"><circle cx="30" cy="30" r="8" fill="#7B4F5C"/><circle cx="55" cy="20" r="5" fill="#5B8C7A"/><ellipse cx="20" cy="60" rx="12" ry="6" fill="#5B8C7A" transform="rotate(-30 20 60)"/><circle cx="70" cy="50" r="6" fill="#7B4F5C"/><ellipse cx="50" cy="70" rx="10" ry="5" fill="#5B8C7A" transform="rotate(15 50 70)"/></svg>
+      </div>
+      <div style="position: absolute; bottom: -10px; right: -10px; width: 90px; height: 90px; opacity: 0.15; transform: rotate(180deg);">
+        <svg viewBox="0 0 100 100" fill="none"><circle cx="30" cy="30" r="8" fill="#7B4F5C"/><circle cx="55" cy="20" r="5" fill="#5B8C7A"/><ellipse cx="20" cy="60" rx="12" ry="6" fill="#5B8C7A" transform="rotate(-30 20 60)"/><circle cx="70" cy="50" r="6" fill="#7B4F5C"/></svg>
+      </div>
+      <div style="width: 64px; height: 64px; border-radius: 50%; border: 1.5px solid #C4A882; display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem;">
+        <span style="font-family: var(--font-serif); font-size: 22px; color: #C4A882;">M&J</span>
+      </div>
+      <p style="font-family: var(--font-serif); font-size: 26px; font-weight: 500; margin: 0 0 2px; color: var(--color-text-primary); text-align: center; line-height: 1.25;">Malachie & Jessica</p>
+      <p style="font-size: 13px; color: #C4A882; margin: 4px 0 0; letter-spacing: 0.4px;">23 mai 2026 · Nantes</p>
+      <div style="width: 32px; height: 1px; background: #C4A882; margin: 1.5rem 0; opacity: 0.5;"></div>
+      <p style="font-family: var(--font-serif); font-size: 18px; color: var(--color-text-primary); text-align: center; line-height: 1.5; margin: 0 0 0.5rem;">Regards</p>
+      <p style="font-size: 14px; color: var(--color-text-secondary); text-align: center; line-height: 1.65; margin: 0 0 0.25rem; max-width: 280px;">Vivez le mariage à travers les yeux de chacun. Partagez vos photos, relevez des défis, et découvrez la journée sous tous les angles.</p>
+    </div>
+    <div style="padding: 0 1.5rem 1.5rem;">
+      <button onclick="go('join')" style="width: 100%; padding: 14px; background: #5B6B52; color: #fff; border: none; border-radius: var(--border-radius-md); font-size: 15px; font-weight: 500; cursor: pointer;">Rejoindre le mariage</button>
+      <p style="text-align: center; font-size: 11px; color: var(--color-text-tertiary); margin: 10px 0 0;">Aucun compte · Aucune app à télécharger</p>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: JOIN -->
+  <div id="s-join" class="screen" style="display: none; flex-direction: column; min-height: 700px;">
+    <div style="padding: 16px 1.5rem; display: flex; align-items: center; gap: 12px; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <button onclick="go('welcome')" style="background: none; border: none; cursor: pointer; padding: 4px; color: var(--color-text-secondary); font-size: 18px;">&#8592;</button>
+      <p style="font-weight: 500; font-size: 16px; margin: 0;">Qui êtes-vous ?</p>
+    </div>
+    <div style="flex: 1; padding: 1.5rem;">
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0 0 8px;">Votre prénom</p>
+      <input type="text" placeholder="Ex: Sophie" value="Sophie" style="width: 100%; box-sizing: border-box; margin-bottom: 1.25rem; font-size: 15px;" />
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0 0 8px;">Votre lien avec les mariés</p>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1.5rem;">
+        <span class="chip chip-active" style="padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 1px solid #5B6B52; background: #5B6B52; color: #fff;">Amie de la mariée</span>
+        <span class="chip" style="padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); background: transparent;">Famille du marié</span>
+        <span class="chip" style="padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); background: transparent;">Collègue</span>
+        <span class="chip" style="padding: 8px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); background: transparent;">Autre</span>
+      </div>
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin: 0 0 8px;">Votre selfie <span style="color: var(--color-text-tertiary);">(pour vous retrouver sur les photos)</span></p>
+      <div style="display: flex; align-items: center; gap: 14px; padding: 16px; background: var(--color-background-secondary); border-radius: var(--border-radius-md);">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: #E8DFD3; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9A8872" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <div>
+          <p style="font-size: 14px; font-weight: 500; margin: 0; color: var(--color-text-primary);">Prendre un selfie</p>
+          <p style="font-size: 12px; color: var(--color-text-tertiary); margin: 2px 0 0;">Optionnel · aide les autres à vous identifier</p>
+        </div>
+      </div>
+    </div>
+    <div style="padding: 0 1.5rem 1.5rem;">
+      <button onclick="go('feed')" style="width: 100%; padding: 14px; background: #5B6B52; color: #fff; border: none; border-radius: var(--border-radius-md); font-size: 15px; font-weight: 500; cursor: pointer;">C'est parti !</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: LIVE FEED -->
+  <div id="s-feed" class="screen" style="display: none; flex-direction: column; min-height: 700px;">
+    <div style="padding: 14px 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <p style="font-family: var(--font-serif); font-size: 17px; font-weight: 500; margin: 0;">Regards</p>
+        <p style="font-size: 11px; color: #5B6B52; margin: 2px 0 0;">12 regards · 147 photos</p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <div onclick="go('challenges')" style="width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <div style="position: absolute; top: -2px; right: -2px; width: 14px; height: 14px; border-radius: 50%; background: #7B4F5C; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 9px; color: #fff; font-weight: 500;">3</span>
+          </div>
+        </div>
+        <div onclick="go('leaderboard')" style="width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; cursor: pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-secondary)" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Perspectives row -->
+    <div style="padding: 12px 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary);">
+      <div style="display: flex; gap: 12px; overflow-x: auto;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #5B6B52; display: flex; align-items: center; justify-content: center; background: #E8DFD3;">
+            <span style="font-size: 12px; font-weight: 500; color: #5B6B52;">TOUS</span>
+          </div>
+          <span style="font-size: 10px; color: var(--color-text-tertiary);">Tous</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid #C4A882; background: #D4C5B0; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 18px; font-weight: 500; color: #6B5D4E;">S</span>
+          </div>
+          <span style="font-size: 10px; color: var(--color-text-tertiary);">Sophie</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; background: #C6D4C0; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 18px; font-weight: 500; color: #4A5E44;">T</span>
+          </div>
+          <span style="font-size: 10px; color: var(--color-text-tertiary);">Thomas</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; background: #D4C0C8; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 18px; font-weight: 500; color: #6B4A56;">A</span>
+          </div>
+          <span style="font-size: 10px; color: var(--color-text-tertiary);">Aïcha</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; background: #C0C8D4; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 18px; font-weight: 500; color: #4A566B;">P</span>
+          </div>
+          <span style="font-size: 10px; color: var(--color-text-tertiary);">Paul</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0;">
+          <div style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid transparent; background: #D4D0C0; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: 14px; color: var(--color-text-tertiary);">+7</span>
+          </div>
+          <span style="font-size: 10px; color: var(--color-text-tertiary);">autres</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- "Même moment" cluster -->
+    <div style="padding: 14px 1.25rem 0;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+        <div style="width: 20px; height: 20px; border-radius: 50%; background: #F0E8DD; display: flex; align-items: center; justify-content: center;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C4A882" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <p style="font-size: 12px; color: #C4A882; font-weight: 500; margin: 0; letter-spacing: 0.3px;">MÊME MOMENT · 16h52</p>
+        <span style="font-size: 11px; color: var(--color-text-tertiary); margin-left: auto;">La première danse</span>
+      </div>
+      <div style="display: flex; gap: 6px; margin-bottom: 4px;">
+        <div style="flex: 2; aspect-ratio: 4/3; background: linear-gradient(135deg, #D4C5B0 0%, #E8DFD3 100%); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; position: relative;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#9A8872" stroke-width="1" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+          <div style="position: absolute; bottom: 6px; left: 6px; display: flex; align-items: center; gap: 4px; background: rgba(0,0,0,0.45); padding: 3px 8px; border-radius: 10px;">
+            <div style="width: 14px; height: 14px; border-radius: 50%; background: #D4C5B0; display: flex; align-items: center; justify-content: center;"><span style="font-size: 8px; color: #6B5D4E; font-weight: 500;">S</span></div>
+            <span style="font-size: 10px; color: #fff;">Sophie</span>
+          </div>
+        </div>
+        <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
+          <div style="flex: 1; background: linear-gradient(135deg, #C6D4C0 0%, #DDE5D9 100%); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; position: relative;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B8060" stroke-width="1" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <div style="position: absolute; bottom: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: #C6D4C0; display: flex; align-items: center; justify-content: center;"><span style="font-size: 8px; color: #4A5E44; font-weight: 500;">T</span></div>
+          </div>
+          <div style="flex: 1; background: linear-gradient(135deg, #D4C0C8 0%, #E5D9DE 100%); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; position: relative;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8C6B78" stroke-width="1" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <div style="position: absolute; bottom: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: #D4C0C8; display: flex; align-items: center; justify-content: center;"><span style="font-size: 8px; color: #6B4A56; font-weight: 500;">A</span></div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 6px 0 0; text-align: center;">3 regards sur ce moment · Touchez pour explorer</p>
+    </div>
+
+    <!-- Single photo with comment -->
+    <div style="padding: 14px 1.25rem 0;">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+        <div style="width: 28px; height: 28px; border-radius: 50%; background: #C0C8D4; display: flex; align-items: center; justify-content: center;"><span style="font-size: 11px; font-weight: 500; color: #4A566B;">P</span></div>
+        <div>
+          <span style="font-size: 13px; font-weight: 500; color: var(--color-text-primary);">Paul</span>
+          <span style="font-size: 11px; color: var(--color-text-tertiary); margin-left: 6px;">17h14</span>
+        </div>
+      </div>
+      <div style="aspect-ratio: 16/9; background: linear-gradient(135deg, #C0C8D4 0%, #D9DEE5 100%); border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6B7A8C" stroke-width="1" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+        <div style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#E24B4A" stroke="#E24B4A" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          <span style="font-size: 12px; color: var(--color-text-secondary);">23</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span style="font-size: 12px; color: var(--color-text-secondary);">4</span>
+        </div>
+        <div style="margin-left: auto; display: flex; align-items: center; gap: 4px; padding: 4px 10px; background: #F0E8DD; border-radius: 12px;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#C4A882" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span style="font-size: 11px; color: #9A8872; font-weight: 500;">Défi validé</span>
+        </div>
+      </div>
+      <p style="font-size: 13px; color: var(--color-text-secondary); margin: 4px 0 0; line-height: 1.5;"><span style="font-weight: 500; color: var(--color-text-primary);">Paul</span> Le moment où le petit neveu a volé le micro pendant le discours du témoin</p>
+    </div>
+
+    <!-- Bottom nav -->
+    <div style="margin-top: auto; padding: 10px 0; border-top: 0.5px solid var(--color-border-tertiary); display: flex; justify-content: space-around;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B6B52" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span style="font-size: 10px; color: #5B6B52; font-weight: 500;">Feed</span>
+      </div>
+      <div onclick="go('challenges')" style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span style="font-size: 10px; color: var(--color-text-tertiary);">Défis</span>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; position: relative;">
+        <div style="width: 44px; height: 44px; border-radius: 50%; background: #5B6B52; display: flex; align-items: center; justify-content: center; margin-top: -20px; border: 3px solid var(--color-background-primary);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+      </div>
+      <div onclick="go('moments')" style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span style="font-size: 10px; color: var(--color-text-tertiary);">Moments</span>
+      </div>
+      <div onclick="go('leaderboard')" style="display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        <span style="font-size: 10px; color: var(--color-text-tertiary);">Score</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 4: CHALLENGES -->
+  <div id="s-challenges" class="screen" style="display: none; flex-direction: column; min-height: 700px;">
+    <div style="padding: 14px 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; gap: 12px;">
+      <button onclick="go('feed')" style="background: none; border: none; cursor: pointer; padding: 4px; color: var(--color-text-secondary); font-size: 18px;">&#8592;</button>
+      <div>
+        <p style="font-weight: 500; font-size: 16px; margin: 0;">Défis photo</p>
+        <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 2px 0 0;">4/10 complétés · 180 pts</p>
+      </div>
+    </div>
+    <div style="padding: 1.25rem; overflow-y: auto; flex: 1;">
+      <!-- Progress -->
+      <div style="height: 6px; background: var(--color-background-secondary); border-radius: 3px; margin-bottom: 1.25rem; overflow: hidden;">
+        <div style="width: 40%; height: 100%; background: #5B6B52; border-radius: 3px;"></div>
+      </div>
+
+      <!-- Challenge cards -->
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid #5B6B52;">
+        <div style="display: flex; align-items: start; justify-content: space-between;">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #5B6B52; font-weight: 500; background: #E8F0E4; padding: 2px 8px; border-radius: 8px;">+50 pts</span>
+              <span style="font-size: 11px; color: var(--color-text-tertiary);">8 participations</span>
+            </div>
+            <p style="font-size: 14px; font-weight: 500; margin: 4px 0 2px; color: var(--color-text-primary);">La première danse</p>
+            <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0;">Capturez la première danse des mariés depuis votre angle</p>
+          </div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #5B6B52; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 10px; border-left: 3px solid #C4A882;">
+        <div style="display: flex; align-items: start; justify-content: space-between;">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #9A8872; font-weight: 500; background: #F0E8DD; padding: 2px 8px; border-radius: 8px;">+30 pts</span>
+              <span style="font-size: 11px; color: var(--color-text-tertiary);">12 participations</span>
+            </div>
+            <p style="font-size: 14px; font-weight: 500; margin: 4px 0 2px; color: var(--color-text-primary);">Selfie avec un(e) inconnu(e)</p>
+            <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0;">Faites connaissance avec quelqu'un de l'autre famille</p>
+          </div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: #C4A882; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 4px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 10px; position: relative; overflow: hidden;">
+        <div style="display: flex; align-items: start; justify-content: space-between;">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #7B4F5C; font-weight: 500; background: #F0E4E8; padding: 2px 8px; border-radius: 8px;">+40 pts</span>
+              <span style="font-size: 11px; color: var(--color-text-tertiary);">3 participations</span>
+            </div>
+            <p style="font-size: 14px; font-weight: 500; margin: 4px 0 2px; color: var(--color-text-primary);">Le dancefloor vu d'en haut</p>
+            <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0;">Trouvez un point de vue en hauteur pour photographier la piste</p>
+          </div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--color-border-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 4px; cursor: pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: start; justify-content: space-between;">
+          <div style="flex: 1;">
+            <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+              <span style="font-size: 12px; color: #7B4F5C; font-weight: 500; background: #F0E4E8; padding: 2px 8px; border-radius: 8px;">+100 pts</span>
+              <span style="font-size: 11px; color: var(--color-text-tertiary);">0 participations</span>
+            </div>
+            <p style="font-size: 14px; font-weight: 500; margin: 4px 0 2px; color: var(--color-text-primary);">Le moment le plus émouvant</p>
+            <p style="font-size: 12px; color: var(--color-text-secondary); margin: 0;">Capturez LE moment qui vous a fait monter les larmes</p>
+          </div>
+          <div style="width: 28px; height: 28px; border-radius: 50%; border: 1.5px dashed var(--color-border-secondary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 4px; cursor: pointer;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 10px; opacity: 0.6;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div style="width: 28px; height: 28px; border-radius: 50%; background: var(--color-background-tertiary); display: flex; align-items: center; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-tertiary)" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <div>
+            <p style="font-size: 14px; font-weight: 500; margin: 0; color: var(--color-text-secondary);">Défi secret</p>
+            <p style="font-size: 12px; color: var(--color-text-tertiary); margin: 2px 0 0;">Se débloque à 20h00</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 5: MOMENTS TIMELINE -->
+  <div id="s-moments" class="screen" style="display: none; flex-direction: column; min-height: 700px;">
+    <div style="padding: 14px 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; gap: 12px;">
+      <button onclick="go('feed')" style="background: none; border: none; cursor: pointer; padding: 4px; color: var(--color-text-secondary); font-size: 18px;">&#8592;</button>
+      <div>
+        <p style="font-weight: 500; font-size: 16px; margin: 0;">Moments</p>
+        <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 2px 0 0;">La journée, minute par minute</p>
+      </div>
+    </div>
+    <div style="padding: 1.25rem; flex: 1;">
+      <div style="position: relative; padding-left: 24px;">
+        <div style="position: absolute; left: 7px; top: 0; bottom: 0; width: 1px; background: var(--color-border-tertiary);"></div>
+
+        <div style="position: relative; margin-bottom: 1.5rem;">
+          <div style="position: absolute; left: -21px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #5B6B52; border: 2px solid var(--color-background-primary);"></div>
+          <p style="font-size: 12px; color: #5B6B52; font-weight: 500; margin: 0 0 6px;">16h40 · Cérémonie</p>
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #E8DFD3; display: flex; align-items: center; justify-content: center;"><span style="font-size: 10px; color: #9A8872;">5x</span></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #E8DFD3;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #E8DFD3;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #C6D4C0;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #D4C0C8; display: flex; align-items: center; justify-content: center;"><span style="font-size: 10px; color: #6B4A56;">+18</span></div>
+          </div>
+          <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 4px 0 0;">23 photos · 7 regards</p>
+        </div>
+
+        <div style="position: relative; margin-bottom: 1.5rem;">
+          <div style="position: absolute; left: -21px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #C4A882; border: 2px solid var(--color-background-primary);"></div>
+          <p style="font-size: 12px; color: #C4A882; font-weight: 500; margin: 0 0 6px;">16h52 · Première danse</p>
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #D4C5B0;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #C6D4C0;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #D4C0C8;"></div>
+          </div>
+          <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 4px 0 0;">15 photos · 5 regards</p>
+        </div>
+
+        <div style="position: relative; margin-bottom: 1.5rem;">
+          <div style="position: absolute; left: -21px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: #7B4F5C; border: 2px solid var(--color-background-primary);"></div>
+          <p style="font-size: 12px; color: #7B4F5C; font-weight: 500; margin: 0 0 6px;">17h30 · Discours des témoins</p>
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #C0C8D4;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #D4D0C0;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #E8DFD3; display: flex; align-items: center; justify-content: center;"><span style="font-size: 10px; color: #9A8872;">+8</span></div>
+          </div>
+          <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 4px 0 0;">10 photos · 4 regards</p>
+        </div>
+
+        <div style="position: relative; margin-bottom: 1.5rem;">
+          <div style="position: absolute; left: -21px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--color-border-secondary); border: 2px solid var(--color-background-primary);"></div>
+          <p style="font-size: 12px; color: var(--color-text-secondary); font-weight: 500; margin: 0 0 6px;">18h30 · Cocktail</p>
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #D4D0C0;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #C6D4C0;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #C0C8D4; display: flex; align-items: center; justify-content: center;"><span style="font-size: 10px; color: #4A566B;">+31</span></div>
+          </div>
+          <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 4px 0 0;">33 photos · 10 regards</p>
+        </div>
+
+        <div style="position: relative;">
+          <div style="position: absolute; left: -21px; top: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--color-border-secondary); border: 2px solid var(--color-background-primary);"></div>
+          <p style="font-size: 12px; color: var(--color-text-secondary); font-weight: 500; margin: 0 0 6px;">21h00 · Soirée dansante</p>
+          <div style="display: flex; gap: 4px;">
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #D4C0C8;"></div>
+            <div style="width: 48px; height: 48px; border-radius: 6px; background: #D4C5B0; display: flex; align-items: center; justify-content: center;"><span style="font-size: 10px; color: #6B5D4E;">+52</span></div>
+          </div>
+          <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 4px 0 0;">54 photos · 11 regards</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 6: LEADERBOARD -->
+  <div id="s-leaderboard" class="screen" style="display: none; flex-direction: column; min-height: 700px;">
+    <div style="padding: 14px 1.25rem; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; gap: 12px;">
+      <button onclick="go('feed')" style="background: none; border: none; cursor: pointer; padding: 4px; color: var(--color-text-secondary); font-size: 18px;">&#8592;</button>
+      <p style="font-weight: 500; font-size: 16px; margin: 0;">Classement</p>
+    </div>
+
+    <div style="padding: 1.25rem 1.25rem 0;">
+      <!-- Badges row -->
+      <p style="font-size: 12px; color: var(--color-text-tertiary); margin: 0 0 10px; letter-spacing: 0.3px;">VOS BADGES</p>
+      <div style="display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #F0E8DD; border-radius: 16px;">
+          <span style="font-size: 14px;">&#9889;</span>
+          <span style="font-size: 12px; color: #9A8872; font-weight: 500;">Premier regard</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #E8F0E4; border-radius: 16px;">
+          <span style="font-size: 14px;">&#127909;</span>
+          <span style="font-size: 12px; color: #4A5E44; font-weight: 500;">Vidéaste</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px; padding: 6px 12px; border: 0.5px dashed var(--color-border-secondary); border-radius: 16px; opacity: 0.5;">
+          <span style="font-size: 14px;">&#128142;</span>
+          <span style="font-size: 12px; color: var(--color-text-tertiary);">Paparazzi</span>
+        </div>
+      </div>
+
+      <p style="font-size: 12px; color: var(--color-text-tertiary); margin: 0 0 10px; letter-spacing: 0.3px;">TOP PHOTOGRAPHES</p>
+
+      <!-- Podium -->
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 6px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 16px; font-weight: 500; color: #C4A882; width: 20px;">1</span>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #C6D4C0; display: flex; align-items: center; justify-content: center;"><span style="font-size: 14px; font-weight: 500; color: #4A5E44;">T</span></div>
+          <div style="flex: 1;">
+            <p style="font-size: 14px; font-weight: 500; margin: 0;">Thomas</p>
+            <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 1px 0 0;">32 photos · 6 défis</p>
+          </div>
+          <span style="font-size: 15px; font-weight: 500; color: #C4A882;">420 pts</span>
+        </div>
+      </div>
+
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 6px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 16px; font-weight: 500; color: var(--color-text-tertiary); width: 20px;">2</span>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #D4C0C8; display: flex; align-items: center; justify-content: center;"><span style="font-size: 14px; font-weight: 500; color: #6B4A56;">A</span></div>
+          <div style="flex: 1;">
+            <p style="font-size: 14px; font-weight: 500; margin: 0;">Aïcha</p>
+            <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 1px 0 0;">28 photos · 5 défis</p>
+          </div>
+          <span style="font-size: 15px; font-weight: 500; color: var(--color-text-secondary);">350 pts</span>
+        </div>
+      </div>
+
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 6px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 16px; font-weight: 500; color: var(--color-text-tertiary); width: 20px;">3</span>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #D4C5B0; display: flex; align-items: center; justify-content: center;"><span style="font-size: 14px; font-weight: 500; color: #6B5D4E;">S</span></div>
+          <div style="flex: 1;">
+            <p style="font-size: 14px; font-weight: 500; margin: 0;">Sophie <span style="font-size: 11px; color: #5B6B52;">(vous)</span></p>
+            <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 1px 0 0;">19 photos · 4 défis</p>
+          </div>
+          <span style="font-size: 15px; font-weight: 500; color: var(--color-text-secondary);">180 pts</span>
+        </div>
+      </div>
+
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; margin-bottom: 6px; opacity: 0.7;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <span style="font-size: 16px; font-weight: 500; color: var(--color-text-tertiary); width: 20px;">4</span>
+          <div style="width: 36px; height: 36px; border-radius: 50%; background: #C0C8D4; display: flex; align-items: center; justify-content: center;"><span style="font-size: 14px; font-weight: 500; color: #4A566B;">P</span></div>
+          <div style="flex: 1;">
+            <p style="font-size: 14px; font-weight: 500; margin: 0;">Paul</p>
+            <p style="font-size: 11px; color: var(--color-text-tertiary); margin: 1px 0 0;">15 photos · 3 défis</p>
+          </div>
+          <span style="font-size: 15px; font-weight: 500; color: var(--color-text-secondary);">140 pts</span>
+        </div>
+      </div>
+
+      <!-- Photo la plus aimée -->
+      <p style="font-size: 12px; color: var(--color-text-tertiary); margin: 1.25rem 0 10px; letter-spacing: 0.3px;">PHOTO LA PLUS AIMEE</p>
+      <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px; display: flex; gap: 12px; align-items: center;">
+        <div style="width: 64px; height: 64px; border-radius: var(--border-radius-md); background: linear-gradient(135deg, #D4C0C8 0%, #E5D9DE 100%); flex-shrink: 0; display: flex; align-items: center; justify-content: center;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8C6B78" stroke-width="1" opacity="0.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+        </div>
+        <div>
+          <p style="font-size: 13px; font-weight: 500; margin: 0;">Par Aïcha</p>
+          <p style="font-size: 12px; color: var(--color-text-tertiary); margin: 2px 0 0;">47 coeurs · "Les enfants avec le gâteau"</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation dots -->
+<div style="display: flex; justify-content: center; gap: 6px; margin-top: 14px;">
+  <button onclick="go('welcome')" class="dot active" data-s="welcome" style="width: 8px; height: 8px; border-radius: 50%; border: none; cursor: pointer; padding: 0; transition: all 0.2s;"></button>
+  <button onclick="go('join')" class="dot" data-s="join" style="width: 8px; height: 8px; border-radius: 50%; border: none; cursor: pointer; padding: 0; transition: all 0.2s;"></button>
+  <button onclick="go('feed')" class="dot" data-s="feed" style="width: 8px; height: 8px; border-radius: 50%; border: none; cursor: pointer; padding: 0; transition: all 0.2s;"></button>
+  <button onclick="go('challenges')" class="dot" data-s="challenges" style="width: 8px; height: 8px; border-radius: 50%; border: none; cursor: pointer; padding: 0; transition: all 0.2s;"></button>
+  <button onclick="go('moments')" class="dot" data-s="moments" style="width: 8px; height: 8px; border-radius: 50%; border: none; cursor: pointer; padding: 0; transition: all 0.2s;"></button>
+  <button onclick="go('leaderboard')" class="dot" data-s="leaderboard" style="width: 8px; height: 8px; border-radius: 50%; border: none; cursor: pointer; padding: 0; transition: all 0.2s;"></button>
+</div>
+<div style="display: flex; justify-content: center; gap: 4px; margin-top: 6px;">
+  <span style="font-size: 9px; color: var(--color-text-tertiary); width: 44px; text-align: center;">Accueil</span>
+  <span style="font-size: 9px; color: var(--color-text-tertiary); width: 44px; text-align: center;">Profil</span>
+  <span style="font-size: 9px; color: var(--color-text-tertiary); width: 44px; text-align: center;">Feed</span>
+  <span style="font-size: 9px; color: var(--color-text-tertiary); width: 44px; text-align: center;">Défis</span>
+  <span style="font-size: 9px; color: var(--color-text-tertiary); width: 44px; text-align: center;">Moments</span>
+  <span style="font-size: 9px; color: var(--color-text-tertiary); width: 44px; text-align: center;">Score</span>
+</div>
+
+</div>
+</div>
+
+<style>
+.screen { display: none; flex-direction: column; }
+.dot { background: var(--color-border-tertiary); }
+.dot.active { background: #5B6B52; width: 18px !important; border-radius: 4px !important; }
+</style>
+
+<script>
+function go(name) {
+  document.querySelectorAll('.screen').forEach(s => s.style.display = 'none');
+  document.getElementById('s-' + name).style.display = 'flex';
+  document.querySelectorAll('.dot').forEach(d => {
+    d.classList.remove('active');
+    d.style.width = '8px';
+    d.style.borderRadius = '50%';
+  });
+  const dot = document.querySelector('.dot[data-s="'+name+'"]');
+  if (dot) { dot.classList.add('active'); dot.style.width = '18px'; dot.style.borderRadius = '4px'; }
+}
+</script>
