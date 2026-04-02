@@ -98,3 +98,29 @@ export const config = pgTable('config', {
   key: text('key').primaryKey(),
   value: jsonb('value').notNull(),
 });
+
+import { relations } from 'drizzle-orm';
+
+export const guestsRelations = relations(guests, ({ many }) => ({
+  media: many(media),
+  reactions: many(reactions),
+  comments: many(comments),
+}));
+
+export const mediaRelations = relations(media, ({ one, many }) => ({
+  guest: one(guests, { fields: [media.guestId], references: [guests.id] }),
+  challenge: one(challenges, { fields: [media.challengeId], references: [challenges.id] }),
+  reactions: many(reactions),
+  comments: many(comments),
+}));
+
+export const reactionsRelations = relations(reactions, ({ one }) => ({
+  media: one(media, { fields: [reactions.mediaId], references: [media.id] }),
+  guest: one(guests, { fields: [reactions.guestId], references: [guests.id] }),
+}));
+
+export const commentsRelations = relations(comments, ({ one }) => ({
+  media: one(media, { fields: [comments.mediaId], references: [media.id] }),
+  guest: one(guests, { fields: [comments.guestId], references: [guests.id] }),
+  parent: one(comments, { fields: [comments.parentId], references: [comments.id] }),
+}));

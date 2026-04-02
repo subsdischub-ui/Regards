@@ -2,7 +2,7 @@
   "name": "Regards — Malachie & Jessica",
   "short_name": "Regards",
   "description": "Partagez vos regards sur notre mariage",
-  "start_url": "/",
+  "start_url": "/feed",
   "display": "standalone",
   "background_color": "#FAF8F5",
   "theme_color": "#5B6B52",

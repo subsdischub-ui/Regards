@@ -13,7 +13,7 @@ async function seed() {
       title: 'La cérémonie vue de votre place',
       description: 'Montrez-nous la cérémonie telle que vous la voyez depuis votre siège',
       points: 30,
-      unlockAt: new Date('2026-05-23T14:30:00Z'),
+      unlockAt: new Date('2026-05-23T14:30:00Z'), // 16h30 CEST
       sortOrder: 1,
       isActive: false,
     },
@@ -63,7 +63,7 @@ async function seed() {
       title: 'Le plat que vous avez préféré',
       description: 'Photographiez votre plat préféré du repas',
       points: 20,
-      unlockAt: new Date('2026-05-23T17:00:00Z'),
+      unlockAt: new Date('2026-05-23T17:00:00Z'), // 19h00 CEST
       sortOrder: 8,
       isActive: false,
     },
@@ -71,7 +71,7 @@ async function seed() {
       title: 'La piste à son apogée',
       description: 'Le moment où la piste de danse est la plus remplie',
       points: 50,
-      unlockAt: new Date('2026-05-23T20:00:00Z'),
+      unlockAt: new Date('2026-05-23T20:00:00Z'), // 22h00 CEST
       sortOrder: 9,
       isActive: false,
     },
@@ -79,7 +79,7 @@ async function seed() {
       title: 'Le dernier debout',
       description: 'Qui sera le dernier sur la piste ? Prouvez-le !',
       points: 100,
-      unlockAt: new Date('2026-05-23T22:00:00Z'),
+      unlockAt: new Date('2026-05-23T22:00:00Z'), // 00h00 CEST next day
       sortOrder: 10,
       isActive: false,
     },

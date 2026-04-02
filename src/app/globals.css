@@ -27,3 +27,14 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text-main);
 }
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
