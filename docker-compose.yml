@@ -1,8 +1,11 @@
 services:
   app:
     build: .
-    ports:
-      - "3000:3000"
+    # No `ports:` mapping — Dokploy/Traefik routes to the container via the
+    # internal Docker network using the service name `app` + container port 3000.
+    # Publishing 3000 on the host would conflict with Dokploy's own admin UI.
+    expose:
+      - "3000"
     environment:
       DATABASE_URL: postgresql://regards:${POSTGRES_PASSWORD}@postgres:5432/regards
       MINIO_ENDPOINT: minio
