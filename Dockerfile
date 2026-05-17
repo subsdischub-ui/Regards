@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 
 # Install ffmpeg for video thumbnails
 RUN apk add --no-cache ffmpeg
@@ -6,7 +6,10 @@ RUN apk add --no-cache ffmpeg
 FROM base AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# npm install (not `npm ci`) because the lockfile was generated with npm 11
+# and node:22-alpine ships with npm 10.x — `npm ci` would reject minor format
+# diffs that npm install reconciles in place. Safe for a single-target deploy.
+RUN npm install --no-audit --no-fund
 
 FROM base AS builder
 WORKDIR /app
