@@ -33,15 +33,20 @@ export function startCronJobs() {
     }
   });
 
-  // Drive sync every 5 minutes (placeholder — implemented in Task 15)
-  cron.schedule('*/5 * * * *', async () => {
-    try {
-      const { syncToDrive } = await import('@/lib/drive');
-      await syncToDrive();
-    } catch (err) {
-      console.error('[cron] Drive sync error:', err);
-    }
-  });
+  // Drive sync every 5 minutes — only when configured
+  if (process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
+    cron.schedule('*/5 * * * *', async () => {
+      try {
+        const { syncToDrive } = await import('@/lib/drive');
+        await syncToDrive();
+      } catch (err) {
+        console.error('[cron] Drive sync error:', err);
+      }
+    });
+    console.log('[cron] Drive sync enabled (every 5 min).');
+  } else {
+    console.log('[cron] Drive sync disabled (GOOGLE_SERVICE_ACCOUNT_KEY not set).');
+  }
 
   console.log('[cron] Cron jobs started.');
 }
