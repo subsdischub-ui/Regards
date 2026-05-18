@@ -67,53 +67,18 @@ async function getTusServer() {
   return tusServer;
 }
 
-async function handleTus(req: Request) {
+async function handleTus(req: Request): Promise<Response> {
+  // `@tus/server` v2.0+ ships a built-in Fetch-API adapter (`handleWeb`) that
+  // accepts a Web `Request` and returns a `Response`. It implements the full
+  // Node `IncomingMessage` / `ServerResponse` shim internally (EventEmitter,
+  // stream piping, header normalization), which the previous hand-rolled
+  // adapter did NOT — it only stubbed `on()` and crashed with
+  // `TypeError: r.req.once is not a function` as soon as `@tus/server`
+  // registered error/end listeners. Result: every upload silently 502'd in prod.
+  // Reusing the official adapter also fixes the body double-read bug
+  // (ReadableStream can be consumed only once).
   const server = await getTusServer();
-
-  // Convert Web Request to Node-compatible format
-  const { readable, writable } = new TransformStream();
-  const writer = writable.getWriter();
-  const body = req.body;
-
-  return new Promise<Response>((resolve) => {
-    const nodeReq = {
-      method: req.method,
-      url: new URL(req.url).pathname,
-      headers: Object.fromEntries(req.headers.entries()),
-      on: (event: string, cb: (chunk?: Uint8Array) => void) => {
-        if (event === 'data' && body) {
-          const reader = body.getReader();
-          (async () => {
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              cb(value);
-            }
-          })();
-        }
-        if (event === 'end' && body) {
-          body.getReader().closed.then(() => cb());
-        }
-      },
-    };
-
-    const headers: Record<string, string> = {};
-    let statusCode = 200;
-
-    const nodeRes = {
-      setHeader: (key: string, value: string) => { headers[key] = value; },
-      getHeader: (key: string) => headers[key],
-      writeHead: (code: number, hdrs?: Record<string, string>) => {
-        statusCode = code;
-        if (hdrs) Object.assign(headers, hdrs);
-      },
-      end: (body?: string) => {
-        resolve(new Response(body || null, { status: statusCode, headers }));
-      },
-    };
-
-    server.handle(nodeReq as any, nodeRes as any);
-  });
+  return server.handleWeb(req);
 }
 
 export const POST = handleTus;
