@@ -45,8 +45,16 @@ async function getTusServer() {
         throw { status_code: 400, body: 'guest_id metadata required' };
       }
 
-      // Insert media record
-      const fileUrl = `media/originals/${upload.id}`;
+      // Insert media record.
+      // `@tus/s3-store` writes the upload object to S3 at key = upload.id
+      // (no prefix). Storing `media/originals/${upload.id}` in DB created a
+      // mismatch: the file-serving proxy and the post-processing job both
+      // looked at a path that didn't exist → 404 + sharp crash + processing
+      // stuck in 'pending'/'error' + media never appeared in /feed.
+      // Aligning fileUrl to the actual S3 key fixes the whole chain.
+      // (Thumbnails keep their own `media/thumbnails/...` prefix because
+      // processing.ts writes them with explicit PutObjectCommand keys.)
+      const fileUrl = upload.id;
       const [record] = await db.insert(media).values({
         guestId,
         fileUrl,
