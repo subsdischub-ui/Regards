@@ -57,7 +57,13 @@ export default function UploadPage() {
 
         await new Promise<void>((resolve, reject) => {
           const upload = new Upload(f.file, {
-            endpoint: '/api/upload/tus/',
+            // Path segment 'files' is required: the catch-all route at
+            // [...path]/route.ts demands ≥1 path segment, and Next.js
+            // 308-redirects '/api/upload/tus/' → '/api/upload/tus' (no slash)
+            // which then 404s. Hitting '/api/upload/tus/files' matches the
+            // catch-all (path=['files']) and reaches the TUS handler. The
+            // 'files' label is arbitrary and not interpreted server-side.
+            endpoint: '/api/upload/tus/files',
             retryDelays: [0, 1000, 3000, 5000],
             metadata: {
               filename: f.file.name,
