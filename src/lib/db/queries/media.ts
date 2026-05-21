@@ -1,14 +1,59 @@
 import { db } from '@/lib/db';
-import { media, guests } from '@/lib/db/schema';
-import { eq, desc, and, sql, lt } from 'drizzle-orm';
+import { media, guests, reactions, comments } from '@/lib/db/schema';
+import { eq, desc, and, sql, lt, inArray } from 'drizzle-orm';
+
+type MediaCounts = {
+  reactionCount: number;
+  commentCount: number;
+  hasReacted: boolean;
+};
 
 type MediaWithGuest = typeof media.$inferSelect & {
   guest: Pick<typeof guests.$inferSelect, 'id' | 'name' | 'avatarUrl'> | null;
-};
+} & MediaCounts;
 
 export type FeedItem =
   | { type: 'single'; item: MediaWithGuest }
   | { type: 'cluster'; items: MediaWithGuest[]; time: Date };
+
+/** Attach reaction/comment counts + whether the viewer reacted, in batch. */
+async function enrichMedia<T extends { id: string }>(
+  items: T[],
+  viewerGuestId?: string,
+): Promise<(T & MediaCounts)[]> {
+  if (items.length === 0) return [];
+  const ids = items.map((i) => i.id);
+
+  const [reactionRows, commentRows, reactedRows] = await Promise.all([
+    db
+      .select({ mediaId: reactions.mediaId, count: sql<number>`count(*)::int` })
+      .from(reactions)
+      .where(inArray(reactions.mediaId, ids))
+      .groupBy(reactions.mediaId),
+    db
+      .select({ mediaId: comments.mediaId, count: sql<number>`count(*)::int` })
+      .from(comments)
+      .where(inArray(comments.mediaId, ids))
+      .groupBy(comments.mediaId),
+    viewerGuestId
+      ? db
+          .select({ mediaId: reactions.mediaId })
+          .from(reactions)
+          .where(and(inArray(reactions.mediaId, ids), eq(reactions.guestId, viewerGuestId)))
+      : Promise.resolve([] as { mediaId: string }[]),
+  ]);
+
+  const reactionMap = new Map(reactionRows.map((r) => [r.mediaId, Number(r.count)]));
+  const commentMap = new Map(commentRows.map((r) => [r.mediaId, Number(r.count)]));
+  const reactedSet = new Set(reactedRows.map((r) => r.mediaId));
+
+  return items.map((item) => ({
+    ...item,
+    reactionCount: reactionMap.get(item.id) ?? 0,
+    commentCount: commentMap.get(item.id) ?? 0,
+    hasReacted: reactedSet.has(item.id),
+  }));
+}
 
 export function clusterMedia(items: MediaWithGuest[]): FeedItem[] {
   if (items.length === 0) return [];
@@ -60,8 +105,9 @@ export async function getFeedMedia(options: {
   cursor?: string;
   limit?: number;
   guestId?: string;
+  viewerGuestId?: string;
 }) {
-  const { cursor, limit = 20, guestId } = options;
+  const { cursor, limit = 20, guestId, viewerGuestId } = options;
 
   const conditions = [eq(media.processingStatus, 'done')];
   if (guestId) {
@@ -104,16 +150,18 @@ export async function getFeedMedia(options: {
   const page = hasMore ? items.slice(0, limit) : items;
   const nextCursor = hasMore ? page[page.length - 1].uploadedAt.toISOString() : null;
 
+  const enriched = (await enrichMedia(page, viewerGuestId)) as MediaWithGuest[];
+
   // Only cluster in full feed mode (not filtered by guest)
   const feed = guestId
-    ? page.map((item) => ({ type: 'single' as const, item }))
-    : clusterMedia(page as any);
+    ? enriched.map((item) => ({ type: 'single' as const, item }))
+    : clusterMedia(enriched);
 
   return { feed, nextCursor };
 }
 
-export async function getMediaById(mediaId: string) {
-  return db
+export async function getMediaById(mediaId: string, viewerGuestId?: string) {
+  const row = await db
     .select({
       id: media.id,
       guestId: media.guestId,
@@ -138,4 +186,8 @@ export async function getMediaById(mediaId: string) {
     .leftJoin(guests, eq(media.guestId, guests.id))
     .where(eq(media.id, mediaId))
     .then((rows) => rows[0] ?? null);
+
+  if (!row) return null;
+  const [enriched] = await enrichMedia([row], viewerGuestId);
+  return enriched;
 }

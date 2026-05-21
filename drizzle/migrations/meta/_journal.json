@@ -8,6 +8,13 @@
       "when": 1774998189217,
       "tag": "0000_cool_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779369721773,
+      "tag": "0001_dashing_strong_guy",
+      "breakpoints": true
     }
   ]
 }

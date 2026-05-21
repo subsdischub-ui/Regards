@@ -11,15 +11,30 @@ type Props = {
   challengeId: string | null;
   guest: { id: string; name: string; avatarUrl: string | null } | null;
   takenAt: string | null;
+  reactionCount?: number;
+  commentCount?: number;
+  hasReacted?: boolean;
 };
 
-export default function MediaCard({ id, fileUrl, thumbnailUrl, fileType, caption, challengeId, guest, takenAt }: Props) {
+export default function MediaCard({
+  id,
+  fileUrl,
+  thumbnailUrl,
+  fileType,
+  caption,
+  challengeId,
+  guest,
+  takenAt,
+  reactionCount = 0,
+  commentCount = 0,
+  hasReacted = false,
+}: Props) {
   const displayUrl = thumbnailUrl || fileUrl;
   const time = takenAt ? new Date(takenAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
   const isVideo = fileType.startsWith('video/');
 
   return (
-    <div className="bg-bg-card rounded-card overflow-hidden">
+    <div className="bg-bg-card rounded-card overflow-hidden" data-testid="media-card">
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3">
         <Link href={`/feed?guest=${guest?.id}`}>
@@ -49,11 +64,12 @@ export default function MediaCard({ id, fileUrl, thumbnailUrl, fileType, caption
 
       {/* Actions */}
       <div className="flex items-center gap-3 px-4 py-2">
-        <ReactionButton mediaId={id} initialCount={0} initialReacted={false} />
+        <ReactionButton mediaId={id} initialCount={reactionCount} initialReacted={hasReacted} />
         <Link href={`/media/${id}`} className="flex items-center gap-1 text-text-tertiary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
+          <span className="text-xs text-text-secondary" data-testid="comment-count">{commentCount}</span>
         </Link>
         <div className="ml-auto text-text-tertiary">
           <DownloadButton fileUrl={fileUrl} />

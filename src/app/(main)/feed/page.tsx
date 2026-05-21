@@ -23,10 +23,7 @@ function FeedContent() {
     fetch('/api/guests').then((r) => r.json()).then(setGuests);
   }, []);
 
-  // Initial load
-  useEffect(() => {
-    loadMore();
-  }, [guestFilter]);
+  // Initial load + reset on filter change is handled inside useInfiniteFeed.
 
   // Infinite scroll
   useEffect(() => {
@@ -97,6 +94,9 @@ function FeedContent() {
               challengeId={m.challengeId}
               guest={m.guest}
               takenAt={m.takenAt}
+              reactionCount={m.reactionCount}
+              commentCount={m.commentCount}
+              hasReacted={m.hasReacted}
             />
           );
         })}

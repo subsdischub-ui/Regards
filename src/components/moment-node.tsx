@@ -13,7 +13,7 @@ export default function MomentNode({ label, startTime, endTime, photoCount, gues
   const end = new Date(endTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-4" data-testid="moment-node">
       {/* Timeline line + dot */}
       <div className="flex flex-col items-center">
         <div className="h-3 w-3 rounded-full border-2 border-primary bg-white" />

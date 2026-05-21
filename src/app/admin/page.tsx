@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { guests, media } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
+import QRGenerator from '@/components/qr-generator';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +12,7 @@ export default async function AdminDashboardPage() {
   if (!isAdmin) redirect('/admin/login');
 
   const driveEnabled = !!process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
   const totalGuests = await db.select({ count: sql<number>`count(*)` }).from(guests);
   const totalMedia = await db.select({ count: sql<number>`count(*)` }).from(media).where(eq(media.processingStatus, 'done'));
@@ -49,12 +51,24 @@ export default async function AdminDashboardPage() {
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="mb-8 space-y-3">
         <a href="/admin/challenges" className="block rounded-card border border-border p-4">
           Gérer les défis &rarr;
         </a>
         <a href="/admin/moments" className="block rounded-card border border-border p-4">
           Gérer les moments &rarr;
+        </a>
+        <a href="/admin/media" className="block rounded-card border border-border p-4">
+          Modérer les médias &rarr;
+        </a>
+        <a href="/slideshow" target="_blank" className="block rounded-card border border-border p-4">
+          Ouvrir le diaporama live &rarr;
+        </a>
+        <a
+          href="/api/admin/export"
+          className="block rounded-card bg-secondary p-4 text-center font-medium text-white"
+        >
+          Télécharger l&apos;album complet (ZIP)
         </a>
         {driveEnabled && (
           <form action="/api/sync-drive" method="POST">
@@ -63,6 +77,15 @@ export default async function AdminDashboardPage() {
             </button>
           </form>
         )}
+      </div>
+
+      {/* QR code for guests */}
+      <div className="rounded-card bg-bg-secondary p-5">
+        <h2 className="mb-3 text-center font-serif text-lg">QR code invités</h2>
+        <p className="mb-4 text-center text-xs text-text-secondary">
+          À imprimer sur un chevalet ou une carte — les invités le scannent pour rejoindre.
+        </p>
+        <QRGenerator url={appUrl} />
       </div>
     </div>
   );

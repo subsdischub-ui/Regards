@@ -1,32 +1,80 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
+
+function singleIds(items: any[]): Set<string> {
+  const ids = new Set<string>();
+  for (const it of items) {
+    if (it?.type === 'single' && it.item?.id) ids.add(it.item.id);
+  }
+  return ids;
+}
 
 export function useInfiniteFeed(guestFilter?: string) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const cursorRef = useRef<string | null>(null);
+  // Synchronous guard against concurrent fetches (StrictMode double effects,
+  // fast scroll) appending the same page twice.
+  const inFlightRef = useRef(false);
+  // Generation token: a fetch started for an older filter must not overwrite
+  // results for the current one.
+  const genRef = useRef(0);
 
-  const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+  async function fetchPage(gen: number, cursor: string | null) {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (cursor) params.set('cursor', cursor);
+      if (guestFilter) params.set('guest', guestFilter);
 
-    const params = new URLSearchParams();
-    if (cursorRef.current) params.set('cursor', cursorRef.current);
-    if (guestFilter) params.set('guest', guestFilter);
+      const res = await fetch(`/api/media?${params}`);
+      const data = await res.json();
+      if (gen !== genRef.current) return; // stale filter — discard
 
-    const res = await fetch(`/api/media?${params}`);
-    const data = await res.json();
+      setItems((prev) => {
+        const base = cursor ? prev : [];
+        const seen = singleIds(base);
+        const fresh = (data.feed ?? []).filter((it: any) =>
+          it?.type === 'single' ? !seen.has(it.item?.id) : true
+        );
+        return [...base, ...fresh];
+      });
+      cursorRef.current = data.nextCursor;
+      setHasMore(!!data.nextCursor);
+    } finally {
+      inFlightRef.current = false;
+      setLoading(false);
+    }
+  }
 
-    setItems((prev) => [...prev, ...data.feed]);
-    cursorRef.current = data.nextCursor;
-    setHasMore(!!data.nextCursor);
-    setLoading(false);
-  }, [loading, hasMore, guestFilter]);
+  // Reset and reload whenever the guest filter changes.
+  useEffect(() => {
+    const gen = ++genRef.current;
+    inFlightRef.current = false;
+    cursorRef.current = null;
+    setItems([]);
+    setHasMore(true);
+    fetchPage(gen, null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guestFilter]);
+
+  const loadMore = useCallback(() => {
+    if (!hasMore || inFlightRef.current) return;
+    fetchPage(genRef.current, cursorRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore]);
 
   const prepend = useCallback((item: any) => {
-    setItems((prev) => [item, ...prev]);
+    setItems((prev) => {
+      if (item?.type === 'single' && singleIds(prev).has(item.item?.id)) {
+        return prev;
+      }
+      return [item, ...prev];
+    });
   }, []);
 
   return { items, loading, hasMore, loadMore, prepend };

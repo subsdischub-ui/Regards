@@ -18,6 +18,9 @@ const makeMedia = (id: string, guestId: string, takenAt: string) => ({
   driveSynced: false,
   driveFileId: null,
   guest: { id: guestId, name: `Guest ${guestId}`, avatarUrl: null },
+  reactionCount: 0,
+  commentCount: 0,
+  hasReacted: false,
 });
 
 describe('clusterMedia', () => {

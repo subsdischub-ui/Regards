@@ -15,6 +15,7 @@ export default function ChallengeCard({ title, description, points, isActive, un
 
   return (
     <div
+      data-testid="challenge-card"
       className={`rounded-card border-l-[3px] p-3.5 ${
         completed
           ? 'border-l-primary bg-bg-secondary'

@@ -141,28 +141,37 @@ async function processMedia(job: ProcessingJob) {
   updates.processingStatus = 'done';
   await db.update(media).set(updates).where(eq(media.id, job.mediaId));
 
-  // Broadcast SSE event
+  // Award points/badges before broadcasting so leaderboard data is consistent.
+  try {
+    const { awardUploadPoints } = await import('@/lib/points');
+    await awardUploadPoints(job.mediaId);
+  } catch (err) {
+    console.error(`Points award failed for ${job.mediaId}:`, err);
+  }
+
+  // Broadcast the fully-formed media item so the live feed can render it directly.
   const { broadcast } = await import('@/lib/sse');
   const record = await db.query.media.findFirst({
     where: eq(media.id, job.mediaId),
     with: { guest: true },
   });
-  // SSE will be implemented in Task 9
-  try {
+  if (record) {
     broadcast('new_media', {
-      mediaId: job.mediaId,
-      guestName: record?.guest?.name,
-      thumbnailUrl: updates.thumbnailUrl,
+      id: record.id,
+      guestId: record.guestId,
+      fileUrl: record.fileUrl,
+      thumbnailUrl: record.thumbnailUrl,
+      fileType: record.fileType,
+      caption: record.caption,
+      challengeId: record.challengeId,
+      takenAt: record.takenAt,
+      uploadedAt: record.uploadedAt,
+      guest: record.guest
+        ? { id: record.guest.id, name: record.guest.name, avatarUrl: record.guest.avatarUrl }
+        : null,
+      reactionCount: 0,
+      commentCount: 0,
+      hasReacted: false,
     });
-  } catch {
-    // SSE not yet initialized
-  }
-
-  // Calculate points (will be implemented in Task 14)
-  try {
-    const { awardUploadPoints } = await import('@/lib/points');
-    await awardUploadPoints(job.mediaId);
-  } catch {
-    // Points system not yet initialized
   }
 }

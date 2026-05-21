@@ -56,7 +56,11 @@ export default function MediaDetailPage() {
       {/* Actions + Comments */}
       <div className="rounded-t-2xl bg-white p-4">
         <div className="mb-3 flex items-center gap-4">
-          <ReactionButton mediaId={mediaId} initialCount={0} initialReacted={false} />
+          <ReactionButton
+            mediaId={mediaId}
+            initialCount={media.reactionCount ?? 0}
+            initialReacted={media.hasReacted ?? false}
+          />
           <div className="ml-auto text-text-secondary">
             <DownloadButton fileUrl={media.fileUrl} />
           </div>

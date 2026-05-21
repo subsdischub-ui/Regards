@@ -1,14 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+type Comment = {
+  id: string;
+  parentId: string | null;
+  content: string;
+  createdAt: string;
+  guest: { name: string } | null;
+};
 
 export default function CommentThread({ mediaId }: { mediaId: string }) {
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const reqId = useRef(0);
+
+  // Guard against out-of-order responses: only the most recent fetch wins.
+  async function loadComments() {
+    const myReq = ++reqId.current;
+    const res = await fetch(`/api/media/${mediaId}/comments`);
+    if (res.ok && myReq === reqId.current) {
+      setComments(await res.json());
+    }
+  }
 
   useEffect(() => {
-    fetch(`/api/media/${mediaId}/comments`).then((r) => r.json()).then(setComments);
+    loadComments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -23,9 +42,8 @@ export default function CommentThread({ mediaId }: { mediaId: string }) {
     });
 
     if (res.ok) {
-      const comment = await res.json();
-      setComments((prev) => [...prev, { ...comment, guest: { name: localStorage.getItem('guest_name') || '?' } }]);
       setNewComment('');
+      await loadComments();
     }
     setSubmitting(false);
   }

@@ -26,7 +26,7 @@ export default function ReactionButton({
   }
 
   return (
-    <button onClick={toggle} className="flex items-center gap-1">
+    <button onClick={toggle} className="flex items-center gap-1" data-testid="reaction-button">
       <svg
         width="16" height="16" viewBox="0 0 24 24"
         fill={reacted ? '#E24B4A' : 'none'}
@@ -35,7 +35,7 @@ export default function ReactionButton({
       >
         <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
       </svg>
-      <span className="text-xs text-text-secondary">{count}</span>
+      <span className="text-xs text-text-secondary" data-testid="reaction-count">{count}</span>
     </button>
   );
 }

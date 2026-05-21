@@ -82,6 +82,15 @@ export const comments = pgTable('comments', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ─── Guestbook (audio messages) ──────────────────────────
+export const guestbookMessages = pgTable('guestbook_messages', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  guestId: uuid('guest_id').references(() => guests.id, { onDelete: 'cascade' }).notNull(),
+  audioUrl: text('audio_url').notNull(),
+  duration: integer('duration'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 // ─── Moments ─────────────────────────────────────────────
 export const moments = pgTable('moments', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -123,4 +132,8 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   media: one(media, { fields: [comments.mediaId], references: [media.id] }),
   guest: one(guests, { fields: [comments.guestId], references: [guests.id] }),
   parent: one(comments, { fields: [comments.parentId], references: [comments.id] }),
+}));
+
+export const guestbookMessagesRelations = relations(guestbookMessages, ({ one }) => ({
+  guest: one(guests, { fields: [guestbookMessages.guestId], references: [guests.id] }),
 }));

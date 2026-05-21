@@ -5,14 +5,15 @@ import { media } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client, BUCKET } from '@/lib/minio';
-import { getAdminSession } from '@/lib/auth';
+import { getAdminSession, getGuestId } from '@/lib/auth';
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ mediaId: string }> }
 ) {
   const { mediaId } = await params;
-  const item = await getMediaById(mediaId);
+  const viewerGuestId = (await getGuestId()) ?? undefined;
+  const item = await getMediaById(mediaId, viewerGuestId);
 
   if (!item) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
