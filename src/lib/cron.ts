@@ -3,9 +3,17 @@ import { db } from '@/lib/db';
 import { challenges } from '@/lib/db/schema';
 import { and, lte, eq, sql } from 'drizzle-orm';
 import { broadcast } from '@/lib/sse';
+import { recoverStuckMedia } from '@/lib/processing';
 
 export function startCronJobs() {
   console.log('[cron] Starting cron jobs...');
+
+  // Recover media left unprocessed by a previous process (deploy/crash/OOM).
+  // The processing queue is in-memory and lost on restart — without this,
+  // media uploaded right before a restart would never reach the feed.
+  recoverStuckMedia().catch((err) =>
+    console.error('[cron] Stuck-media recovery failed:', err)
+  );
 
   // Unlock challenges every minute
   cron.schedule('* * * * *', async () => {

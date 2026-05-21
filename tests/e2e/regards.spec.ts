@@ -6,6 +6,14 @@ const SAMPLE_PNG = Buffer.from(
   'base64'
 );
 
+// A minimal ISO-BMFF `ftyp` box. ffmpeg cannot derive a frame from it, which is
+// exactly the point: the test asserts the video path degrades gracefully.
+const SAMPLE_MP4 = Buffer.from([
+  0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70,
+  0x69, 0x73, 0x6f, 0x6d, 0x00, 0x00, 0x00, 0x01,
+  0x69, 0x73, 0x6f, 0x6d, 0x6d, 0x70, 0x34, 0x32,
+]);
+
 const ADMIN_PASSWORD = 'admin-change-me';
 
 test.describe.serial('Parcours invité Regards', () => {
@@ -130,6 +138,34 @@ test.describe.serial('Parcours invité Regards', () => {
     await page.goto('/slideshow');
     await expect(page.getByText('Malachie & Jessica')).toBeVisible();
     await expect(page.locator('img[src^="/api/media/file/"]')).toBeVisible({ timeout: 20_000 });
+  });
+
+  test('Upload vidéo — pipeline résilient et affichage feed', async () => {
+    await page.goto('/upload');
+    await page.locator('input[type="file"]').nth(1).setInputFiles({
+      name: 'clip.mp4',
+      mimeType: 'video/mp4',
+      buffer: SAMPLE_MP4,
+    });
+    await page.getByRole('button', { name: /Envoyer 1 fichier/ }).click();
+    await expect(page).toHaveURL(/\/feed/, { timeout: 30_000 });
+
+    // The video must reach the feed even when thumbnailing degrades — proves
+    // the async ffmpeg path never crashes or stalls the processing pipeline.
+    await expect
+      .poll(
+        async () => {
+          const res = await page.request.get('/api/media');
+          const json = await res.json();
+          let count = 0;
+          for (const f of json.feed ?? []) {
+            count += f.type === 'cluster' ? f.items.length : 1;
+          }
+          return count;
+        },
+        { timeout: 45_000, intervals: [1000, 2000, 2000, 3000] }
+      )
+      .toBeGreaterThanOrEqual(2);
   });
 });
 
