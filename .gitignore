@@ -40,6 +40,11 @@ yarn-error.log*
 .env.development
 !.env.example
 
+# secrets & local-only simulation artifacts — NEVER commit
+/MINIO SECR/
+/sim/
+/test-upload-*.jpg
+
 # vercel
 .vercel
 
