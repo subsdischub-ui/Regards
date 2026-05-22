@@ -20,16 +20,23 @@ export function enqueueProcessing(mediaId: string, fileUrl: string, fileType: st
 }
 
 /**
- * Re-enqueue media left in 'pending'/'processing' by a previous process
- * (deploy, crash, OOM). The in-memory queue is lost on restart, so without
- * this those media would never appear in the feed. Safe to call at startup:
- * points/badges are only awarded after a media reaches 'done', and the queue
- * de-dup (`tracked`) prevents a fresh upload from being processed twice.
+ * Recover work left unfinished by a previous process (deploy, crash, OOM):
+ *
+ *  1. Media still in 'pending'/'processing' are re-enqueued — the in-memory
+ *     queue is lost on restart, so otherwise they would never reach the feed.
+ *  2. Media already in 'done' whose points were never settled (a crash in the
+ *     gap between the 'done' write and awardUploadPoints) are credited
+ *     directly — no reprocessing needed.
+ *
+ * Safe to call at startup and repeatedly: awardUploadPoints atomically claims
+ * each media via `media.pointsAwarded`, so recovered items can never be
+ * credited twice.
  */
 export async function recoverStuckMedia(): Promise<number> {
   const { db } = await import('@/lib/db');
   const { media } = await import('@/lib/db/schema');
-  const { inArray } = await import('drizzle-orm');
+  const { inArray, and, eq } = await import('drizzle-orm');
+  const { awardUploadPoints } = await import('@/lib/points');
 
   const stuck = await db
     .select({ id: media.id, fileUrl: media.fileUrl, fileType: media.fileType })
@@ -39,8 +46,23 @@ export async function recoverStuckMedia(): Promise<number> {
   for (const item of stuck) {
     enqueueProcessing(item.id, item.fileUrl, item.fileType);
   }
-  if (stuck.length > 0) {
-    console.log(`[processing] Recovered ${stuck.length} stuck media item(s).`);
+
+  // Finished media whose points were never settled — credit them now.
+  const unsettled = await db
+    .select({ id: media.id })
+    .from(media)
+    .where(and(eq(media.processingStatus, 'done'), eq(media.pointsAwarded, false)));
+
+  for (const item of unsettled) {
+    await awardUploadPoints(item.id).catch((err) =>
+      console.error(`[processing] Points recovery failed for ${item.id}:`, err),
+    );
+  }
+
+  if (stuck.length > 0 || unsettled.length > 0) {
+    console.log(
+      `[processing] Recovery: re-enqueued ${stuck.length} stuck, settled points for ${unsettled.length}.`,
+    );
   }
   return stuck.length;
 }

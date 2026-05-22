@@ -6,12 +6,17 @@ import { eq } from 'drizzle-orm';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { s3Client, BUCKET } from '@/lib/minio';
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import { createReadStream, createWriteStream } from 'node:fs';
+import { rm, stat } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import * as archiverNs from 'archiver';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-// archiver v7 is ESM and exposes per-format classes instead of a factory.
+// archiver v7+ is ESM and exposes per-format classes instead of a factory.
 type ZipArchiveInstance = Readable & {
   append: (src: Buffer, opts: { name: string }) => void;
   finalize: () => Promise<void> | void;
@@ -37,12 +42,17 @@ export async function GET() {
     .leftJoin(guests, eq(media.guestId, guests.id))
     .where(eq(media.processingStatus, 'done'));
 
-  // Media files are already compressed — store (level 0) keeps it fast.
-  const archive = new ZipArchive({ zlib: { level: 0 } });
-  archive.on('error', (err) => console.error('[export] archive error:', err));
+  // Build the ZIP to a temp file FIRST. Any failure (archive error, disk error)
+  // then happens before the HTTP response is committed, so it surfaces as a
+  // clean 500 — instead of a 200 with a truncated, corrupt download that the
+  // browser cannot detect as failed.
+  const tmpPath = join(tmpdir(), `regards-export-${crypto.randomUUID()}.zip`);
 
-  // Stream entries into the archive while the response is being sent.
-  (async () => {
+  try {
+    const archive = new ZipArchive({ zlib: { level: 0 } }); // media is already compressed
+    // pipeline rejects if either the archive or the write stream errors.
+    const writeDone = pipeline(archive, createWriteStream(tmpPath));
+
     for (const row of rows) {
       try {
         const obj = await s3Client.send(
@@ -54,18 +64,31 @@ export async function GET() {
         const safeGuest = (row.guestName || 'invite').replace(/[^a-zA-Z0-9_-]/g, '_');
         archive.append(Buffer.from(bytes), { name: `${safeGuest}/${row.id}.${ext}` });
       } catch (err) {
+        // A single unreadable object must not abort the whole export.
         console.error(`[export] skipped ${row.fileUrl}:`, err);
       }
     }
-    archive.finalize();
-  })();
 
-  const webStream = Readable.toWeb(archive) as ReadableStream;
+    await archive.finalize();
+    await writeDone; // throws here if the archive could not be written
 
-  return new Response(webStream, {
-    headers: {
-      'Content-Type': 'application/zip',
-      'Content-Disposition': 'attachment; filename="regards-album.zip"',
-    },
-  });
+    const { size } = await stat(tmpPath);
+    const fileStream = createReadStream(tmpPath);
+    // Remove the temp file once the response is fully streamed (or aborted).
+    fileStream.on('close', () => {
+      void rm(tmpPath, { force: true });
+    });
+
+    return new Response(Readable.toWeb(fileStream) as ReadableStream, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': 'attachment; filename="regards-album.zip"',
+        'Content-Length': String(size),
+      },
+    });
+  } catch (err) {
+    console.error('[export] archive build failed:', err);
+    await rm(tmpPath, { force: true }).catch(() => {});
+    return NextResponse.json({ error: 'Export failed' }, { status: 500 });
+  }
 }

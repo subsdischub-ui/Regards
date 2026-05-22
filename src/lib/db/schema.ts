@@ -51,6 +51,9 @@ export const media = pgTable('media', {
   takenAt: timestamp('taken_at', { withTimezone: true }),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow().notNull(),
   processingStatus: text('processing_status').default('pending').notNull(),
+  // Atomically claimed by awardUploadPoints so a media can never be credited
+  // twice (e.g. crash-recovery re-processing the same item).
+  pointsAwarded: boolean('points_awarded').default(false).notNull(),
   driveSynced: boolean('drive_synced').default(false).notNull(),
   driveFileId: text('drive_file_id'),
 }, (table) => [

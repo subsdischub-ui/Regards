@@ -4,6 +4,7 @@ import { getGuestId, getAdminSession } from '@/lib/auth';
 import { getCompletedChallengeIds } from '@/lib/db/queries/challenges';
 import { db } from '@/lib/db';
 import { challenges } from '@/lib/db/schema';
+import { readJsonBody, asNonEmptyString, asValidDate, asFiniteInt } from '@/lib/validation';
 
 export async function GET() {
   const guestId = await getGuestId();
@@ -25,14 +26,45 @@ export async function POST(request: Request) {
   const isAdmin = await getAdminSession();
   if (!isAdmin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await request.json();
+  const body = await readJsonBody(request);
+  if (!body) {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const title = asNonEmptyString(body.title);
+  const description = asNonEmptyString(body.description);
+  if (!title || !description) {
+    return NextResponse.json(
+      { error: 'title and description are required' },
+      { status: 400 },
+    );
+  }
+
+  let unlockAt: Date | null = null;
+  if (body.unlockAt) {
+    unlockAt = asValidDate(body.unlockAt);
+    if (!unlockAt) {
+      return NextResponse.json({ error: 'invalid unlockAt' }, { status: 400 });
+    }
+  }
+
+  const points = body.points === undefined ? 30 : asFiniteInt(body.points);
+  if (points === null) {
+    return NextResponse.json({ error: 'invalid points' }, { status: 400 });
+  }
+
+  const sortOrder = body.sortOrder === undefined ? 0 : asFiniteInt(body.sortOrder);
+  if (sortOrder === null) {
+    return NextResponse.json({ error: 'invalid sortOrder' }, { status: 400 });
+  }
+
   const [challenge] = await db.insert(challenges).values({
-    title: body.title,
-    description: body.description,
-    points: body.points || 30,
-    unlockAt: body.unlockAt ? new Date(body.unlockAt) : null,
-    sortOrder: body.sortOrder || 0,
-    isActive: body.unlockAt ? false : true,
+    title,
+    description,
+    points,
+    unlockAt,
+    sortOrder,
+    isActive: unlockAt ? false : true,
   }).returning();
 
   return NextResponse.json(challenge, { status: 201 });

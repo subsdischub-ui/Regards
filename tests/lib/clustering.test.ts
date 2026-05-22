@@ -11,6 +11,7 @@ const makeMedia = (id: string, guestId: string, takenAt: string) => ({
   caption: null,
   uploadedAt: new Date(),
   processingStatus: 'done' as const,
+  pointsAwarded: true,
   fileSize: 1000,
   width: 800,
   height: 600,

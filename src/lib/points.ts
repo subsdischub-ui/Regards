@@ -31,6 +31,17 @@ export function checkBadges(input: BadgeCheckInput): string[] {
 }
 
 export async function awardUploadPoints(mediaId: string) {
+  // Atomically claim the award. This conditional UPDATE returns a row only on
+  // the first successful call for a given media; any later call (crash-recovery
+  // re-processing, a double-enqueue) matches zero rows and exits early — so
+  // points and badges can never be granted twice for the same upload.
+  const claimed = await db
+    .update(media)
+    .set({ pointsAwarded: true })
+    .where(and(eq(media.id, mediaId), eq(media.pointsAwarded, false)))
+    .returning({ id: media.id });
+  if (claimed.length === 0) return;
+
   const record = await db.query.media.findFirst({ where: eq(media.id, mediaId) });
   if (!record) return;
 

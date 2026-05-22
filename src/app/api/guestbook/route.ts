@@ -11,6 +11,13 @@ export const runtime = 'nodejs';
 const MAX_AUDIO_BYTES = 25 * 1024 * 1024; // 25 MB
 
 export async function GET() {
+  // The guestbook holds personal audio recordings; mirror the page-level
+  // protection (middleware guards /guestbook) and the POST handler below.
+  const guestId = await getGuestId();
+  if (!guestId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const rows = await db
     .select({
       id: guestbookMessages.id,

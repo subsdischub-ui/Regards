@@ -15,6 +15,13 @@
       "when": 1779369721773,
       "tag": "0001_dashing_strong_guy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779400826649,
+      "tag": "0002_naive_senator_kelly",
+      "breakpoints": true
     }
   ]
 }
