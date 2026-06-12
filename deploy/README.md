@@ -76,12 +76,18 @@ Vérifiez que ce fichier est bien committé.
 
 ## 5) Bootstrap de la base
 
-Dès que les conteneurs sont up, appliquer le schéma Drizzle puis seeder.
+**Le schéma Drizzle est appliqué automatiquement à chaque déploiement** par le
+service `migrate` du docker-compose (un conteneur one-shot qui exécute
+`drizzle-kit push --force` avant le démarrage de `app`). Plus besoin de
+commande manuelle après un changement de schéma.
+
+> Note : l'ancienne commande `docker compose exec app npm run db:push` ne
+> fonctionne plus — l'image de prod est un build Next.js *standalone* qui ne
+> contient ni drizzle-kit ni le code source.
+
+Il reste à seeder les données initiales (une seule fois) :
 
 ```bash
-# Sur le VPS, depuis le dossier du projet Dokploy
-docker compose exec app npm run db:push
-
 # Éditer deploy/bootstrap.sql pour mettre vos VRAIS folder_id Drive + moments du mariage
 # puis :
 docker compose cp deploy/bootstrap.sql postgres:/bootstrap.sql

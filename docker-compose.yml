@@ -1,4 +1,22 @@
 services:
+  # One-shot schema sync, runs before the app on every deploy. The runtime
+  # image is Next.js standalone output (no drizzle-kit, no src/), so schema
+  # changes CANNOT be applied from the `app` container — this service reuses
+  # the `builder` stage (full node_modules + drizzle.config.ts) instead.
+  # `push --force` diffs the live DB against src/lib/db/schema.ts, so it is
+  # idempotent and independent of the migrations journal.
+  migrate:
+    build:
+      context: .
+      target: builder
+    command: ["npx", "drizzle-kit", "push", "--force"]
+    environment:
+      DATABASE_URL: postgresql://regards:${POSTGRES_PASSWORD}@postgres:5432/regards
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   app:
     build: .
     # No `ports:` mapping — Dokploy/Traefik routes to the container via the
@@ -23,6 +41,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
+      migrate:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   postgres:

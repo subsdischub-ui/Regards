@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { RELATIONS } from '@/lib/relations';
 
@@ -9,6 +9,38 @@ export default function JoinPage() {
   const [name, setName] = useState('');
   const [relation, setRelation] = useState('');
   const [loading, setLoading] = useState(false);
+  const [restoring, setRestoring] = useState(true);
+
+  // Returning guest on the same device: the httpOnly cookie may be gone
+  // (expiry, Secure-flag mismatch, browser cleanup) but localStorage
+  // survives. Restore the session server-side instead of letting the
+  // guest re-register as a duplicate.
+  useEffect(() => {
+    const storedId = localStorage.getItem('guest_id');
+    if (!storedId) {
+      setRestoring(false);
+      return;
+    }
+
+    fetch('/api/guests/restore', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ guestId: storedId }),
+    })
+      .then(async (res) => {
+        if (res.ok) {
+          const guest = await res.json();
+          localStorage.setItem('guest_name', guest.name);
+          router.replace('/feed');
+          return;
+        }
+        // Stale id (guest deleted) — clean up and show the form
+        localStorage.removeItem('guest_id');
+        localStorage.removeItem('guest_name');
+        setRestoring(false);
+      })
+      .catch(() => setRestoring(false));
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +64,14 @@ export default function JoinPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  if (restoring) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-text-tertiary">
+        Reconnexion...
+      </div>
+    );
   }
 
   return (
