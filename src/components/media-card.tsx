@@ -38,8 +38,16 @@ export default function MediaCard({
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3">
         <Link href={`/feed?guest=${guest?.id}`}>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-bg-secondary text-xs font-medium">
-            {guest?.name?.charAt(0) || '?'}
+          <div className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-bg-secondary text-xs font-medium">
+            {guest?.avatarUrl ? (
+              <img
+                src={`/api/media/file/${guest.avatarUrl}`}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              guest?.name?.charAt(0) || '?'
+            )}
           </div>
         </Link>
         <span className="text-[13px] font-medium">{guest?.name}</span>

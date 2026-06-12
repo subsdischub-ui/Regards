@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useInfiniteFeed } from '@/hooks/use-infinite-feed';
 import { useSSE } from '@/hooks/use-sse';
+import Link from 'next/link';
 import MediaCard from '@/components/media-card';
 import ClusterCard from '@/components/cluster-card';
 import AvatarRow from '@/components/avatar-row';
@@ -67,6 +68,12 @@ function FeedContent() {
             {guests.length} regards &middot; {items.length} photos
           </p>
         </div>
+        <Link href="/profile" aria-label="Mon profil" className="p-1 text-text-secondary">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </Link>
       </div>
 
       {/* Avatar row */}

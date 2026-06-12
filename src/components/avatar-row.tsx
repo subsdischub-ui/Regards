@@ -35,13 +35,21 @@ export default function AvatarRow({
           className="flex flex-shrink-0 flex-col items-center gap-1"
         >
           <div
-            className={`flex h-[50px] w-[50px] items-center justify-center rounded-full border-2 ${
+            className={`flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-full border-2 ${
               activeGuestId === g.id ? 'border-secondary' : 'border-transparent'
             } bg-bg-secondary`}
           >
-            <span className="text-lg font-medium text-text-secondary">
-              {g.name.charAt(0)}
-            </span>
+            {g.avatarUrl ? (
+              <img
+                src={`/api/media/file/${g.avatarUrl}`}
+                alt=""
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <span className="text-lg font-medium text-text-secondary">
+                {g.name.charAt(0)}
+              </span>
+            )}
           </div>
           <span className="text-[10px] text-text-tertiary">{g.name}</span>
         </button>

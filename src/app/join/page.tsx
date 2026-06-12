@@ -2,15 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-
-const RELATIONS = [
-  { value: 'ami_mariee', label: 'Ami(e) de la mariée' },
-  { value: 'famille_marie', label: 'Famille du marié' },
-  { value: 'famille_mariee', label: 'Famille de la mariée' },
-  { value: 'ami_marie', label: 'Ami(e) du marié' },
-  { value: 'collegue', label: 'Collègue' },
-  { value: 'autre', label: 'Autre' },
-];
+import { RELATIONS } from '@/lib/relations';
 
 export default function JoinPage() {
   const router = useRouter();

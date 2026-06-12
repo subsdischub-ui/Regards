@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const PROTECTED_PATHS = ['/feed', '/upload', '/challenges', '/moments', '/leaderboard', '/media', '/guestbook'];
+const PROTECTED_PATHS = ['/feed', '/upload', '/challenges', '/moments', '/leaderboard', '/media', '/guestbook', '/profile'];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -33,5 +33,6 @@ export const config = {
     '/leaderboard/:path*',
     '/media/:path*',
     '/guestbook/:path*',
+    '/profile/:path*',
   ],
 };

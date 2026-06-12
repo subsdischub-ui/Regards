@@ -15,6 +15,14 @@ export async function getGuest(id: string) {
   return db.query.guests.findFirst({ where: eq(guests.id, id) });
 }
 
+export async function updateGuest(
+  id: string,
+  data: Partial<{ name: string; relation: string | null; avatarUrl: string | null }>,
+) {
+  const [guest] = await db.update(guests).set(data).where(eq(guests.id, id)).returning();
+  return guest ?? null;
+}
+
 export async function getAllGuests() {
   return db.query.guests.findMany({ orderBy: (g, { desc }) => [desc(g.points)] });
 }
