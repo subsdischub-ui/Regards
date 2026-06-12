@@ -11,6 +11,8 @@ export default function UploadPage() {
   const [files, setFiles] = useState<FileWithCaption[]>([]);
   const [challengeId, setChallengeId] = useState('');
   const [challenges, setChallenges] = useState<any[]>([]);
+  const [momentId, setMomentId] = useState('');
+  const [moments, setMoments] = useState<any[]>([]);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,7 +22,16 @@ export default function UploadPage() {
     fetch('/api/challenges')
       .then((r) => r.json())
       .then((data) => setChallenges(data.filter((c: any) => c.isActive && !c.completed)));
+    fetch('/api/moments?lite=1')
+      .then((r) => r.json())
+      .then(setMoments);
   }, []);
+
+  function formatHour(iso: string) {
+    return new Date(iso)
+      .toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      .replace(':', 'h');
+  }
 
   function handleFiles(newFiles: FileList | null) {
     if (!newFiles) return;
@@ -71,6 +82,7 @@ export default function UploadPage() {
               guest_id: guestId,
               caption: f.caption || '',
               challenge_id: challengeId || '',
+              moment_id: momentId || '',
             },
             onProgress: (bytesUploaded, bytesTotal) => {
               const fileProgress = (bytesUploaded / bytesTotal) * 100;
@@ -165,6 +177,27 @@ export default function UploadPage() {
               onCaptionChange={handleCaptionChange}
               onRemove={handleRemove}
             />
+
+            {/* Moment selector */}
+            {moments.length > 0 && (
+              <div>
+                <label className="mb-2 block text-[13px] text-text-secondary">
+                  Moment du mariage (optionnel)
+                </label>
+                <select
+                  value={momentId}
+                  onChange={(e) => setMomentId(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-white px-4 py-2.5 text-sm outline-none"
+                >
+                  <option value="">Automatique (selon l&apos;heure de la photo)</option>
+                  {moments.map((m: any) => (
+                    <option key={m.id} value={m.id}>
+                      {m.label} ({formatHour(m.startTime)} &ndash; {formatHour(m.endTime)})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Challenge selector */}
             {challenges.length > 0 && (

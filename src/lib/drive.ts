@@ -126,8 +126,14 @@ export async function syncToDrive() {
         }
       }
 
-      // Find moment for this media
-      const moment = m.takenAt ? findClosestMoment(m.takenAt, allMoments) : null;
+      // Find moment for this media — the guest's explicit choice at upload
+      // wins over the takenAt-based heuristic
+      const explicitMoment = m.momentId ? allMoments.find((am) => am.id === m.momentId) : null;
+      const moment = explicitMoment
+        ? { id: explicitMoment.id, label: explicitMoment.label || 'Moment' }
+        : m.takenAt
+          ? findClosestMoment(m.takenAt, allMoments)
+          : null;
       const momentLabel = moment?.label || 'Autres';
 
       // Get or create moment subfolder in guest folder

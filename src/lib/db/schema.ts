@@ -48,6 +48,7 @@ export const media = pgTable('media', {
   height: integer('height'),
   caption: text('caption'),
   challengeId: uuid('challenge_id').references(() => challenges.id, { onDelete: 'set null' }),
+  momentId: uuid('moment_id').references(() => moments.id, { onDelete: 'set null' }),
   takenAt: timestamp('taken_at', { withTimezone: true }),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow().notNull(),
   processingStatus: text('processing_status').default('pending').notNull(),
@@ -60,6 +61,7 @@ export const media = pgTable('media', {
   index('idx_media_taken_at').on(table.takenAt),
   index('idx_media_guest').on(table.guestId),
   index('idx_media_challenge').on(table.challengeId),
+  index('idx_media_moment').on(table.momentId),
   index('idx_media_not_synced').on(table.driveSynced).where(sql`drive_synced = false`),
   index('idx_media_processing').on(table.processingStatus),
 ]);
@@ -122,6 +124,7 @@ export const guestsRelations = relations(guests, ({ many }) => ({
 export const mediaRelations = relations(media, ({ one, many }) => ({
   guest: one(guests, { fields: [media.guestId], references: [guests.id] }),
   challenge: one(challenges, { fields: [media.challengeId], references: [challenges.id] }),
+  moment: one(moments, { fields: [media.momentId], references: [moments.id] }),
   reactions: many(reactions),
   comments: many(comments),
 }));

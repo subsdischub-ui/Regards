@@ -16,6 +16,7 @@ const makeMedia = (id: string, guestId: string, takenAt: string) => ({
   width: 800,
   height: 600,
   challengeId: null,
+  momentId: null,
   driveSynced: false,
   driveFileId: null,
   guest: { id: guestId, name: `Guest ${guestId}`, avatarUrl: null },

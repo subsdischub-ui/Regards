@@ -8,6 +8,8 @@ import { enqueueProcessing } from '@/lib/processing';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 let tusServer: Server | null = null;
 
 async function getTusServer() {
@@ -38,6 +40,9 @@ async function getTusServer() {
       const guestId = metadata?.guest_id;
       const caption = metadata?.caption || null;
       const challengeId = metadata?.challenge_id || null;
+      // Guard with a UUID check: a malformed value would make the whole
+      // insert fail with an FK/cast error after the bytes are already stored.
+      const momentId = UUID_RE.test(metadata?.moment_id || '') ? metadata.moment_id : null;
       const fileType = metadata?.filetype || 'application/octet-stream';
       const fileName = metadata?.filename || 'unknown';
 
@@ -62,6 +67,7 @@ async function getTusServer() {
         fileSize: upload.size ? Number(upload.size) : null,
         caption,
         challengeId: challengeId || null,
+        momentId,
         processingStatus: 'pending',
       }).returning();
 

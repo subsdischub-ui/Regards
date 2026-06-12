@@ -1,11 +1,18 @@
-import { NextResponse } from 'next/server';
-import { getMomentsWithMedia } from '@/lib/db/queries/moments';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getAllMoments, getMomentsWithMedia } from '@/lib/db/queries/moments';
 import { db } from '@/lib/db';
 import { moments } from '@/lib/db/schema';
 import { getAdminSession } from '@/lib/auth';
 import { readJsonBody, asValidDate, asNonEmptyString } from '@/lib/validation';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // ?lite=1 — labels/horaires only, for selectors (skips the per-moment
+  // preview/count queries of getMomentsWithMedia).
+  if (request.nextUrl.searchParams.has('lite')) {
+    const result = await getAllMoments();
+    return NextResponse.json(result);
+  }
+
   const result = await getMomentsWithMedia();
   return NextResponse.json(result);
 }
