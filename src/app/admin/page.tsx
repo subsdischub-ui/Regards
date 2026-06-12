@@ -61,6 +61,9 @@ export default async function AdminDashboardPage() {
         <a href="/admin/media" className="block rounded-card border border-border p-4">
           Modérer les médias &rarr;
         </a>
+        <a href="/admin/guests" className="block rounded-card border border-border p-4">
+          Gérer les invités &rarr;
+        </a>
         <a href="/slideshow" target="_blank" className="block rounded-card border border-border p-4">
           Ouvrir le diaporama live &rarr;
         </a>
