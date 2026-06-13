@@ -263,4 +263,66 @@ Si un jour vous voulez ajouter le backup Drive :
   navigateur vers une presigned URL MinIO interne (`http://minio:9000/...`) → toutes
   les images cassées en prod. Après : proxie le contenu via Next.js, MinIO reste
   privé dans le réseau Docker. Headers `Cache-Control: max-age=3600` pour soulager
-  le serveur sur les vues répétées.
+  le serveur sur les vues répétées. **MAJ perf** : le proxy reste le défaut, mais si
+  `MINIO_PUBLIC_ENDPOINT` est défini (voir § Performance), la route renvoie un 307
+  vers une presigned URL **publique** — les octets ne transitent plus par Next.js.
+
+---
+
+## Performance — corrections (lot A/B/C)
+
+Trois symptômes traités : feed lent, scroll perdu au retour d'un média, swipe
+inter-photos intermittent. Détail des corrections livrées :
+
+- **Clé de contexte unifiée** (`feed/page.tsx`) : les cartes simples et les clusters
+  pointent désormais vers la même clé de cache (`guest:<id>`). Avant, ouvrir une photo
+  *isolée* d'un feed invité cassait à la fois le swipe et la restauration de scroll.
+- **Restauration de scroll exacte** : on persiste `window.scrollY` (clé légère) et on
+  le restaure en `useLayoutEffect` ; chaque vignette réserve sa hauteur via
+  `aspect-ratio`, donc le retour tombe pile à la position quittée.
+- **Index Postgres** (`idx_media_feed` partiel sur `uploaded_at DESC`,
+  `idx_media_guest_uploaded`, `idx_comments_media`) : le feed triait/paginait sur des
+  colonnes non indexées → seq-scan qui empirait avec le nombre de photos. **Appliqués
+  automatiquement** par le service `migrate` (`drizzle-kit push --force`) au déploiement.
+- **Une seule connexion SSE par onglet** (`use-sse.ts`) : avant, le `ToastProvider` du
+  layout + le feed ouvraient deux flux permanents. Mutualisés via un singleton refcompté.
+- **Cartes mémoïsées** (`media-card`, `cluster-card`) : le feed entier ne re-rend plus
+  à chaque event SSE / `loadMore`.
+- **Pool Postgres** : `DB_POOL_MAX` (défaut 20 au lieu de 10).
+
+### Servir les médias directement depuis le stockage (optionnel, gros gain)
+
+Par défaut, **tous** les octets (vignettes, images, vidéos, avatars) transitent par le
+process Next.js. Derrière Traefik en HTTP/2 ce n'est pas catastrophique, mais ça met
+toute la bande passante média sur l'app. Pour l'éliminer :
+
+1. Dans Dokploy → service `minio` → **Domains** → ajouter un domaine public
+   (ex. `storage.<votre-domaine>`), port interne **9000**, HTTPS **ON**.
+2. Mettre `MINIO_PUBLIC_ENDPOINT=https://storage.<votre-domaine>` dans les env vars.
+3. Redeploy. La route `/api/media/file` renverra alors un 307 vers une presigned URL
+   publique : le navigateur télécharge directement depuis MinIO, Next.js ne fait que
+   signer.
+
+Détails d'implémentation (pour éviter les régressions de cache déjà rencontrées) :
+
+- Le **307 est lui-même cacheable** (`Cache-Control: public, max-age=3600`) et la
+  presigned URL est valide **24 h** : un visiteur qui revient réutilise le redirect
+  *et* l'objet depuis son cache navigateur, au lieu de re-signer + re-télécharger
+  chaque image à chaque vue (sinon le mode direct serait plus lent que le proxy en
+  visite répétée).
+- Le **Range/seek** marche : le navigateur renvoie son header `Range` en suivant le
+  307, et la signature ne couvre que `host`, donc MinIO l'accepte (→ 206). ⚠️ Si un
+  CDN/proxy est placé devant le endpoint public et signe `Range`, la lecture vidéo
+  casserait — à tester avant d'activer dans ce cas.
+
+> ⚠️ **NE JAMAIS** mettre `minio:9000` (hôte interne) dans `MINIO_PUBLIC_ENDPOINT` :
+> c'est exactement le bug qui avait cassé toutes les images. L'URL doit être joignable
+> depuis un téléphone. Laisser vide = comportement proxy actuel, sûr.
+
+### Pistes restantes (non livrées — nécessitent un test d'upload de bout en bout)
+
+- **Transcodage vidéo en streaming** : `processing.ts` bufferise l'original entier en
+  mémoire (`transformToByteArray`) avant ffmpeg. ffmpeg tourne déjà en process enfant
+  (non bloquant), mais sur de grosses vidéos concurrentes le tas peut gonfler. À
+  améliorer : streamer S3 → fichier temp → S3 (et idéalement déporter le transcodage
+  dans un conteneur worker séparé pour ne pas disputer le CPU au serveur web).

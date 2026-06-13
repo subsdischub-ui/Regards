@@ -62,11 +62,19 @@ export const media = pgTable('media', {
   driveFileId: text('drive_file_id'),
 }, (table) => [
   index('idx_media_taken_at').on(table.takenAt),
-  index('idx_media_guest').on(table.guestId),
   index('idx_media_challenge').on(table.challengeId),
   index('idx_media_moment').on(table.momentId),
   index('idx_media_not_synced').on(table.driveSynced).where(sql`drive_synced = false`),
   index('idx_media_processing').on(table.processingStatus),
+  // The feed sorts AND paginates on uploaded_at (desc) over processing_status='done'.
+  // A partial index on uploaded_at lets Postgres satisfy both the ORDER BY and the
+  // cursor range with a single index scan instead of a seq-scan + sort that grows
+  // linearly with the media table.
+  index('idx_media_feed').on(table.uploadedAt.desc()).where(sql`processing_status = 'done'`),
+  // Guest-filtered feed: same access path, scoped to one guest. Kept non-partial
+  // so it also serves bare `guest_id` lookups (its leftmost prefix) — it fully
+  // supersedes the old single-column idx_media_guest, which was dropped.
+  index('idx_media_guest_uploaded').on(table.guestId, table.uploadedAt.desc()),
 ]);
 
 // ─── Reactions ───────────────────────────────────────────
@@ -88,7 +96,11 @@ export const comments = pgTable('comments', {
   parentId: uuid('parent_id'),
   content: text('content').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => [
+  // The feed runs a count(*) GROUP BY media_id over this table for every page;
+  // without an index on the FK it is a full table scan per feed request.
+  index('idx_comments_media').on(table.mediaId),
+]);
 
 // ─── Guestbook (audio messages) ──────────────────────────
 export const guestbookMessages = pgTable('guestbook_messages', {

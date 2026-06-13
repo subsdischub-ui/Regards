@@ -1,3 +1,6 @@
+'use client';
+
+import { memo } from 'react';
 import Link from 'next/link';
 import { mediaHref } from '@/lib/feed-cache';
 
@@ -8,15 +11,13 @@ type ClusterItem = {
   guest: { id: string; name: string } | null;
 };
 
-export default function ClusterCard({
-  items,
-  time,
-  feedContext,
-}: {
+type ClusterCardProps = {
   items: ClusterItem[];
   time: string;
   feedContext?: string;
-}) {
+};
+
+function ClusterCard({ items, time, feedContext }: ClusterCardProps) {
   const displayTime = new Date(time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   const main = items[0];
   const rest = items.slice(1, 3);
@@ -79,3 +80,19 @@ export default function ClusterCard({
     </div>
   );
 }
+
+// `items` is a fresh array on every feed rebuild (prepend / loadMore spread into
+// a new array), so React's default shallow compare would re-render every cluster
+// on each SSE event. A cluster's rendered output only depends on its member ids
+// (+ order), the timestamp, and the feed-context key — media rows are immutable
+// once shown — so compare those explicitly to actually skip the re-render.
+function areEqual(prev: ClusterCardProps, next: ClusterCardProps): boolean {
+  return (
+    prev.time === next.time &&
+    prev.feedContext === next.feedContext &&
+    prev.items.length === next.items.length &&
+    prev.items.every((it, i) => it.id === next.items[i].id)
+  );
+}
+
+export default memo(ClusterCard, areEqual);

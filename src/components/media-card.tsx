@@ -1,3 +1,6 @@
+'use client';
+
+import { memo } from 'react';
 import Link from 'next/link';
 import ReactionButton from './reaction-button';
 import DownloadButton from './download-button';
@@ -22,7 +25,7 @@ type Props = {
   feedContext?: string;
 };
 
-export default function MediaCard({
+function MediaCard({
   id,
   fileUrl,
   thumbnailUrl,
@@ -84,8 +87,12 @@ export default function MediaCard({
           <img
             src={`/api/media/file/${displayUrl}`}
             alt=""
-            className="w-full object-cover"
-            style={{ aspectRatio: width && height ? `${width} / ${height}` : undefined }}
+            // Known dimensions → exact ratio + cover for a uniform feed. Unknown
+            // dimensions → reserve a 1:1 box for scroll-restore stability, but
+            // `contain` (not `cover`) so the rare dimensionless image is
+            // letterboxed whole rather than cropped to a square.
+            className={`w-full ${width && height ? 'object-cover' : 'object-contain'}`}
+            style={{ aspectRatio: width && height ? `${width} / ${height}` : '1 / 1' }}
             loading="lazy"
           />
         )}
@@ -122,3 +129,5 @@ export default function MediaCard({
     </div>
   );
 }
+
+export default memo(MediaCard);
