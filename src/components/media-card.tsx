@@ -64,8 +64,9 @@ export default function MediaCard({
         <span className="text-[11px] text-text-tertiary">{time}</span>
       </div>
 
-      {/* Media */}
-      <Link href={href}>
+      {/* Media — Link is block so its children get the card width (an inline
+          <a> would collapse a width:100% child to 0). */}
+      <Link href={href} className="block">
         {isVideo ? (
           <div className="relative aspect-video bg-bg-secondary">
             <img src={`/api/media/file/${displayUrl}`} alt="" className="h-full w-full object-cover" />
@@ -76,21 +77,17 @@ export default function MediaCard({
             </div>
           </div>
         ) : (
-          // Reserve the image's space up-front (aspect-ratio from its known
-          // dimensions) so the feed's height is stable before images load.
-          // Without this, lazy images collapse to ~0 height and scroll
-          // restoration on return lands far from the intended media.
-          <div
-            className="relative w-full overflow-hidden bg-bg-secondary"
-            style={{ aspectRatio: width && height ? `${width} / ${height}` : '4 / 3' }}
-          >
-            <img
-              src={`/api/media/file/${displayUrl}`}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-              loading="lazy"
-            />
-          </div>
+          // aspect-ratio on the <img> itself (a replaced element, sized
+          // reliably against the card) reserves its space before the lazy
+          // image loads — keeps feed height stable so scroll restoration lands
+          // on the right media — without wrapping it in a block div.
+          <img
+            src={`/api/media/file/${displayUrl}`}
+            alt=""
+            className="w-full object-cover"
+            style={{ aspectRatio: width && height ? `${width} / ${height}` : undefined }}
+            loading="lazy"
+          />
         )}
       </Link>
 

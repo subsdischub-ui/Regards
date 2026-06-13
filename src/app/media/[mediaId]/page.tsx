@@ -139,13 +139,14 @@ export default function MediaDetailPage() {
         onTouchEnd={onTouchEnd}
       >
         {isVideo ? (
-          // poster shows the thumbnail instantly; preload="metadata" fetches
-          // only the header (not the whole file — wedding clips can be 100s of
-          // MB) so opening is fast. The bytes stream on play, via Range.
+          // poster shows the thumbnail instantly; preload="none" means NOT a
+          // single video byte is fetched until the user taps play (wedding
+          // clips can be 100s of MB, and a non-faststart .mov would otherwise
+          // pull a lot just to read metadata). Bytes then stream via Range.
           <video
             src={`/api/media/file/${media.fileUrl}`}
             poster={media.thumbnailUrl ? `/api/media/file/${media.thumbnailUrl}` : undefined}
-            preload="metadata"
+            preload="none"
             controls
             playsInline
             className="max-h-[70vh] w-full object-contain"
