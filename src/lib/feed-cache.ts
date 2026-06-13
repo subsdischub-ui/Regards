@@ -12,6 +12,9 @@
 // (no target set) always fetches fresh, so live uploads still appear.
 
 const PREFIX = 'regards.feed.';
+// Scroll offset lives under its own tiny key so persisting it on every scroll
+// frame never re-serializes the (potentially large) feed item list.
+const SCROLL_PREFIX = 'regards.scrollY.';
 // Abandoned targets (media → elsewhere → feed much later) must not resurrect a
 // stale list. Restores only happen within this window.
 const FRESH_MS = 30 * 60 * 1000;
@@ -121,11 +124,33 @@ export function clearReturnTarget(key: string): void {
   write(key, rest as FeedCache);
 }
 
+/** Persist the feed's scroll offset for an exact restore on return. */
+export function saveScrollY(key: string, y: number): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(SCROLL_PREFIX + key, String(Math.round(y)));
+  } catch {
+    // Quota/serialization failure — degrade to no scroll restore.
+  }
+}
+
+/** Read the persisted scroll offset (null if none stored). */
+export function loadScrollY(key: string): number | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const v = window.sessionStorage.getItem(SCROLL_PREFIX + key);
+    return v != null ? parseInt(v, 10) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Drop a context's cache entirely (e.g. after deleting a media). */
 export function clearFeed(key: string): void {
   if (typeof window === 'undefined') return;
   try {
     window.sessionStorage.removeItem(PREFIX + key);
+    window.sessionStorage.removeItem(SCROLL_PREFIX + key);
   } catch {
     // ignore
   }

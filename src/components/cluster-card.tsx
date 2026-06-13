@@ -1,3 +1,6 @@
+'use client';
+
+import { memo } from 'react';
 import Link from 'next/link';
 import { mediaHref } from '@/lib/feed-cache';
 
@@ -8,7 +11,7 @@ type ClusterItem = {
   guest: { id: string; name: string } | null;
 };
 
-export default function ClusterCard({
+function ClusterCard({
   items,
   time,
   feedContext,
@@ -79,3 +82,5 @@ export default function ClusterCard({
     </div>
   );
 }
+
+export default memo(ClusterCard);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { s3Client, BUCKET } from '@/lib/minio';
+import { s3Client, BUCKET, getPublicMediaUrl } from '@/lib/minio';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -16,6 +16,15 @@ export async function GET(
   // Safari, which aborts any media response that is not a 206 byte-range
   // reply. Forwarding the Range header to S3 also enables seeking everywhere.
   const range = request.headers.get('range') ?? undefined;
+
+  // When a public storage endpoint is configured, hand the browser a presigned
+  // URL and let it fetch bytes straight from object storage — Node never touches
+  // the payload (it just signs + 307s). Range/seek and caching are handled by
+  // storage. Falls through to the streaming proxy when not configured.
+  const directUrl = await getPublicMediaUrl(fileKey, { download });
+  if (directUrl) {
+    return NextResponse.redirect(directUrl, 307);
+  }
 
   try {
     const obj = await s3Client.send(

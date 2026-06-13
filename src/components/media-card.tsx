@@ -1,3 +1,6 @@
+'use client';
+
+import { memo } from 'react';
 import Link from 'next/link';
 import ReactionButton from './reaction-button';
 import DownloadButton from './download-button';
@@ -22,7 +25,7 @@ type Props = {
   feedContext?: string;
 };
 
-export default function MediaCard({
+function MediaCard({
   id,
   fileUrl,
   thumbnailUrl,
@@ -85,7 +88,7 @@ export default function MediaCard({
             src={`/api/media/file/${displayUrl}`}
             alt=""
             className="w-full object-cover"
-            style={{ aspectRatio: width && height ? `${width} / ${height}` : undefined }}
+            style={{ aspectRatio: width && height ? `${width} / ${height}` : '1 / 1' }}
             loading="lazy"
           />
         )}
@@ -122,3 +125,5 @@ export default function MediaCard({
     </div>
   );
 }
+
+export default memo(MediaCard);

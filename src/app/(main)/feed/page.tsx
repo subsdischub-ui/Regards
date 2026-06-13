@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useCallback, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useCallback, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useInfiniteFeed } from '@/hooks/use-infinite-feed';
-import { feedCacheKey } from '@/lib/feed-cache';
+import { feedCacheKey, saveScrollY, loadScrollY } from '@/lib/feed-cache';
 import { useSSE } from '@/hooks/use-sse';
 import Link from 'next/link';
 import MediaCard from '@/components/media-card';
@@ -28,16 +28,42 @@ function FeedContent() {
 
   // Initial load + reset on filter change is handled inside useInfiniteFeed.
 
-  // Returning from a media: scroll back to the one you were viewing instead of
-  // landing at the top. Targets the element (not a pixel offset) so it's robust
-  // to images still loading.
-  useEffect(() => {
+  // Returning from a media: restore the EXACT scroll offset we left at. Runs in
+  // a layout effect (before paint) and relies on every card reserving its height
+  // via aspect-ratio, so the document is already the right total height and the
+  // restore lands precisely — instead of "near the top, then drifting" as lazy
+  // images settle. Falls back to centering the viewed media if no offset stored.
+  useLayoutEffect(() => {
     if (!restoredTarget || items.length === 0) return;
-    const safe = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(restoredTarget) : restoredTarget;
-    const el = document.querySelector(`[data-media-id="${safe}"]`);
-    if (el) el.scrollIntoView({ block: 'center' });
+    const y = loadScrollY(feedCacheKey(guestFilter));
+    if (y != null) {
+      window.scrollTo(0, y);
+    } else {
+      const safe = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(restoredTarget) : restoredTarget;
+      const el = document.querySelector(`[data-media-id="${safe}"]`);
+      if (el) el.scrollIntoView({ block: 'center' });
+    }
     consumeTarget();
-  }, [restoredTarget, items.length, consumeTarget]);
+  }, [restoredTarget, items.length, consumeTarget, guestFilter]);
+
+  // Continuously remember the scroll offset (throttled to one write per frame)
+  // so the restore above has an exact target whichever way the user leaves.
+  useEffect(() => {
+    const key = feedCacheKey(guestFilter);
+    let raf = 0;
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        saveScrollY(key, window.scrollY);
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [guestFilter]);
 
   // Infinite scroll
   useEffect(() => {
@@ -102,7 +128,7 @@ function FeedContent() {
           if (item.type === 'cluster') {
             return (
               <ClusterCard
-                key={`cluster-${i}`}
+                key={item.items[0]?.id ?? `cluster-${i}`}
                 items={item.items}
                 time={item.time}
                 feedContext={feedCacheKey(guestFilter)}
@@ -126,7 +152,7 @@ function FeedContent() {
               reactionCount={m.reactionCount}
               commentCount={m.commentCount}
               hasReacted={m.hasReacted}
-              feedContext={guestFilter}
+              feedContext={feedCacheKey(guestFilter)}
             />
           );
         })}
