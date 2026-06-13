@@ -144,7 +144,7 @@ export default function MediaDetailPage() {
           // clips can be 100s of MB, and a non-faststart .mov would otherwise
           // pull a lot just to read metadata). Bytes then stream via Range.
           <video
-            src={`/api/media/file/${media.fileUrl}`}
+            src={`/api/media/file/${media.webUrl || media.fileUrl}`}
             poster={media.thumbnailUrl ? `/api/media/file/${media.thumbnailUrl}` : undefined}
             preload="none"
             controls

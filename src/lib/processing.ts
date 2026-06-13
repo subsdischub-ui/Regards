@@ -2,6 +2,10 @@ type ProcessingJob = {
   mediaId: string;
   fileUrl: string;
   fileType: string;
+  // Backfill mode: only (re)generate the compressed web video and set webUrl.
+  // Skips status changes, thumbnails, points and broadcast so an already-live
+  // media never flickers out of the feed while its web version is built.
+  transcodeOnly?: boolean;
 };
 
 const queue: ProcessingJob[] = [];
@@ -10,12 +14,78 @@ const queue: ProcessingJob[] = [];
 const tracked = new Set<string>();
 let isProcessing = false;
 
-export function enqueueProcessing(mediaId: string, fileUrl: string, fileType: string) {
+export function enqueueProcessing(
+  mediaId: string,
+  fileUrl: string,
+  fileType: string,
+  transcodeOnly = false,
+) {
   if (tracked.has(mediaId)) return;
   tracked.add(mediaId);
-  queue.push({ mediaId, fileUrl, fileType });
+  queue.push({ mediaId, fileUrl, fileType, transcodeOnly });
   if (!isProcessing) {
     processNext();
+  }
+}
+
+/**
+ * Transcode a video to a compressed, web-optimized MP4 (fits within 1280px,
+ * H.264 + AAC, faststart so playback starts immediately) and store it under
+ * media/web/<id>.mp4. Returns the key, or null on failure (caller falls back to
+ * the original). Runs ffmpeg as a spawned child process — never blocks the
+ * Node event loop — and is bounded by the sequential processing queue.
+ */
+async function transcodeVideoToWeb(
+  mediaId: string,
+  buffer: Buffer,
+  s3Client: any,
+  BUCKET: string,
+  PutObjectCommand: any,
+): Promise<string | null> {
+  const { execFile } = await import('node:child_process');
+  const { promisify } = await import('node:util');
+  const fs = await import('node:fs/promises');
+  const os = await import('node:os');
+  const path = await import('node:path');
+  const execFileAsync = promisify(execFile);
+
+  const tmpInput = path.join(os.tmpdir(), `${mediaId}-tin`);
+  const tmpWeb = path.join(os.tmpdir(), `${mediaId}-web.mp4`);
+
+  try {
+    await fs.writeFile(tmpInput, buffer);
+    await execFileAsync(
+      'ffmpeg',
+      [
+        '-loglevel', 'error',
+        '-i', tmpInput,
+        '-vf', 'scale=w=1280:h=1280:force_original_aspect_ratio=decrease:force_divisible_by=2',
+        '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '28',
+        '-c:a', 'aac', '-b:a', '128k',
+        '-movflags', '+faststart',
+        tmpWeb, '-y',
+      ],
+      { timeout: 20 * 60 * 1000, maxBuffer: 10 * 1024 * 1024 },
+    );
+
+    const webBuf = await fs.readFile(tmpWeb);
+    const webKey = `media/web/${mediaId}.mp4`;
+    await s3Client.send(new PutObjectCommand({
+      Bucket: BUCKET,
+      Key: webKey,
+      Body: webBuf,
+      ContentType: 'video/mp4',
+    }));
+    console.log(
+      `[processing] Transcoded ${mediaId}: ${(buffer.length / 1048576).toFixed(0)}MB -> ${(webBuf.length / 1048576).toFixed(1)}MB`,
+    );
+    return webKey;
+  } catch (err) {
+    console.error(`[processing] Transcode failed for ${mediaId}:`, err);
+    return null;
+  } finally {
+    await fs.rm(tmpInput, { force: true });
+    await fs.rm(tmpWeb, { force: true });
   }
 }
 
@@ -100,6 +170,18 @@ async function processMedia(job: ProcessingJob) {
   const { GetObjectCommand, PutObjectCommand } = await import('@aws-sdk/client-s3');
   const { s3Client, BUCKET } = await import('@/lib/minio');
   const sharp = (await import('sharp')).default;
+
+  // Backfill path: (re)build only the compressed web video for an existing,
+  // already-'done' media — no status change, so it stays visible in the feed.
+  if (job.transcodeOnly) {
+    const obj = await s3Client.send(new GetObjectCommand({ Bucket: BUCKET, Key: job.fileUrl }));
+    const buffer = Buffer.from(await obj.Body!.transformToByteArray());
+    const webKey = await transcodeVideoToWeb(job.mediaId, buffer, s3Client, BUCKET, PutObjectCommand);
+    if (webKey) {
+      await db.update(media).set({ webUrl: webKey }).where(eq(media.id, job.mediaId));
+    }
+    return;
+  }
 
   await db.update(media).set({ processingStatus: 'processing' }).where(eq(media.id, job.mediaId));
 
@@ -189,6 +271,12 @@ async function processMedia(job: ProcessingJob) {
       await fs.rm(tmpInput, { force: true });
       await fs.rm(tmpOutput, { force: true });
     }
+
+    // Build the compressed web version (served for playback instead of the
+    // multi-hundred-MB original). Best-effort: on failure webUrl stays null and
+    // playback falls back to the original.
+    const webKey = await transcodeVideoToWeb(job.mediaId, buffer, s3Client, BUCKET, PutObjectCommand);
+    if (webKey) updates.webUrl = webKey;
 
     // Use upload time as taken_at for videos
     updates.takenAt = new Date();

@@ -7,6 +7,7 @@ const makeMedia = (id: string, guestId: string, takenAt: string) => ({
   takenAt: new Date(takenAt),
   fileUrl: `media/originals/${id}.jpg`,
   thumbnailUrl: `media/thumbnails/${id}.jpg`,
+  webUrl: null,
   fileType: 'image/jpeg',
   caption: null,
   uploadedAt: new Date(),

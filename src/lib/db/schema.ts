@@ -42,6 +42,9 @@ export const media = pgTable('media', {
   guestId: uuid('guest_id').references(() => guests.id, { onDelete: 'cascade' }).notNull(),
   fileUrl: text('file_url').notNull(),
   thumbnailUrl: text('thumbnail_url'),
+  // Compressed, web-optimized version for videos (H.264 720/1280p, faststart).
+  // Served for playback instead of the multi-hundred-MB original.
+  webUrl: text('web_url'),
   fileType: text('file_type').notNull(),
   fileSize: integer('file_size'),
   width: integer('width'),
