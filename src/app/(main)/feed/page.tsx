@@ -3,6 +3,7 @@
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useInfiniteFeed } from '@/hooks/use-infinite-feed';
+import { feedCacheKey } from '@/lib/feed-cache';
 import { useSSE } from '@/hooks/use-sse';
 import Link from 'next/link';
 import MediaCard from '@/components/media-card';
@@ -15,7 +16,8 @@ function FeedContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const guestFilter = searchParams.get('guest') ?? undefined;
-  const { items, loading, hasMore, loadMore, prepend } = useInfiniteFeed(guestFilter);
+  const { items, loading, hasMore, loadMore, prepend, restoredTarget, consumeTarget } =
+    useInfiniteFeed(guestFilter);
   const [guests, setGuests] = useState<any[]>([]);
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -25,6 +27,17 @@ function FeedContent() {
   }, []);
 
   // Initial load + reset on filter change is handled inside useInfiniteFeed.
+
+  // Returning from a media: scroll back to the one you were viewing instead of
+  // landing at the top. Targets the element (not a pixel offset) so it's robust
+  // to images still loading.
+  useEffect(() => {
+    if (!restoredTarget || items.length === 0) return;
+    const safe = typeof CSS !== 'undefined' && CSS.escape ? CSS.escape(restoredTarget) : restoredTarget;
+    const el = document.querySelector(`[data-media-id="${safe}"]`);
+    if (el) el.scrollIntoView({ block: 'center' });
+    consumeTarget();
+  }, [restoredTarget, items.length, consumeTarget]);
 
   // Infinite scroll
   useEffect(() => {
@@ -87,7 +100,14 @@ function FeedContent() {
       <div className="space-y-3 p-4">
         {items.map((item, i) => {
           if (item.type === 'cluster') {
-            return <ClusterCard key={`cluster-${i}`} items={item.items} time={item.time} />;
+            return (
+              <ClusterCard
+                key={`cluster-${i}`}
+                items={item.items}
+                time={item.time}
+                feedContext={feedCacheKey(guestFilter)}
+              />
+            );
           }
           const m = item.item;
           return (
@@ -104,6 +124,7 @@ function FeedContent() {
               reactionCount={m.reactionCount}
               commentCount={m.commentCount}
               hasReacted={m.hasReacted}
+              feedContext={guestFilter}
             />
           );
         })}

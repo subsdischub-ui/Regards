@@ -1,6 +1,13 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  feedCacheKey,
+  flattenFeedIds,
+  loadFeed,
+  saveFeed,
+  clearReturnTarget,
+} from '@/lib/feed-cache';
 
 /**
  * Collects every media id present in the feed — both standalone `single`
@@ -25,6 +32,9 @@ export function useInfiniteFeed(guestFilter?: string) {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  // When set, the feed was restored after returning from a media: the page
+  // should scroll this media into view (then call consumeTarget).
+  const [restoredTarget, setRestoredTarget] = useState<string | null>(null);
   const cursorRef = useRef<string | null>(null);
   // Synchronous guard against concurrent fetches (StrictMode double effects,
   // fast scroll) appending the same page twice.
@@ -67,16 +77,42 @@ export function useInfiniteFeed(guestFilter?: string) {
     }
   }
 
-  // Reset and reload whenever the guest filter changes.
+  // Reset and reload whenever the guest filter changes — unless we are returning
+  // from a media in this same context, in which case restore the cached feed so
+  // the scroll position (and the media you were on) is preserved.
   useEffect(() => {
     const gen = ++genRef.current;
     inFlightRef.current = false;
+
+    const cached = loadFeed(feedCacheKey(guestFilter));
+    if (cached?.returnTargetId) {
+      cursorRef.current = cached.cursor;
+      setItems(cached.items);
+      setHasMore(cached.hasMore);
+      setRestoredTarget(cached.returnTargetId);
+      return;
+    }
+
+    setRestoredTarget(null);
     cursorRef.current = null;
     setItems([]);
     setHasMore(true);
     fetchPage(gen, null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guestFilter]);
+
+  // Persist the loaded feed so a later return can restore it. saveFeed preserves
+  // any pending returnTargetId, so this never clobbers the scroll anchor.
+  useEffect(() => {
+    if (items.length === 0) return;
+    saveFeed(feedCacheKey(guestFilter), {
+      items,
+      cursor: cursorRef.current,
+      hasMore,
+      orderedIds: flattenFeedIds(items),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, hasMore, guestFilter]);
 
   const loadMore = useCallback(() => {
     if (!hasMore || inFlightRef.current) return;
@@ -93,5 +129,11 @@ export function useInfiniteFeed(guestFilter?: string) {
     });
   }, []);
 
-  return { items, loading, hasMore, loadMore, prepend };
+  // Called by the feed page once it has scrolled the restored media into view.
+  const consumeTarget = useCallback(() => {
+    setRestoredTarget(null);
+    clearReturnTarget(feedCacheKey(guestFilter));
+  }, [guestFilter]);
+
+  return { items, loading, hasMore, loadMore, prepend, restoredTarget, consumeTarget };
 }

@@ -6,6 +6,7 @@ import ReactionButton from '@/components/reaction-button';
 import DownloadButton from '@/components/download-button';
 import CommentThread from '@/components/comment-thread';
 import { useGuest } from '@/hooks/use-guest';
+import { getNeighbors, setReturnTarget, clearFeed, mediaHref } from '@/lib/feed-cache';
 
 function formatHour(iso: string) {
   return new Date(iso)
@@ -21,10 +22,33 @@ export default function MediaDetailPage() {
   const [moments, setMoments] = useState<any[]>([]);
   const [momentStatus, setMomentStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [deleting, setDeleting] = useState(false);
+  const [neighbors, setNeighbors] = useState<{ prevId?: string; nextId?: string }>({});
+
+  // Which context opened this media (?ctx=all | guest:<id> | moment:<id>). Read
+  // once from the URL; it stays constant while arrowing within the same context.
+  const [cacheKey] = useState<string>(() =>
+    typeof window === 'undefined'
+      ? 'all'
+      : new URLSearchParams(window.location.search).get('ctx') || 'all'
+  );
 
   useEffect(() => {
     fetch(`/api/media/${mediaId}`).then((r) => r.json()).then(setMedia);
   }, [mediaId]);
+
+  // Anchor the feed's return scroll to the media currently shown, and compute
+  // the ‹ › neighbors from the cached feed order. Re-runs as you arrow.
+  useEffect(() => {
+    setReturnTarget(cacheKey, mediaId);
+    setNeighbors(getNeighbors(cacheKey, mediaId));
+  }, [mediaId, cacheKey]);
+
+  function goToNeighbor(id?: string) {
+    if (!id) return;
+    // replace, not push: the back button returns straight to the originating
+    // list (scrolled to where you stopped), not through every media stepped past.
+    router.replace(mediaHref(id, cacheKey));
+  }
 
   // The localStorage check only decides what UI to show; the API re-checks
   // ownership via the httpOnly cookie on every PATCH/DELETE.
@@ -64,6 +88,9 @@ export default function MediaDetailPage() {
     try {
       const res = await fetch(`/api/media/${mediaId}`, { method: 'DELETE' });
       if (res.ok) {
+        // The cached feed still lists this (now-deleted) media; drop it so the
+        // feed reloads fresh instead of restoring a phantom card.
+        clearFeed(cacheKey);
         router.push('/feed');
         return;
       }
@@ -86,7 +113,7 @@ export default function MediaDetailPage() {
       </div>
 
       {/* Media */}
-      <div className="flex flex-1 items-center justify-center">
+      <div className="relative flex flex-1 items-center justify-center">
         {isVideo ? (
           <video
             src={`/api/media/file/${media.fileUrl}`}
@@ -99,6 +126,30 @@ export default function MediaDetailPage() {
             alt=""
             className="max-h-[70vh] w-full object-contain"
           />
+        )}
+
+        {/* Prev / next within the originating feed */}
+        {neighbors.prevId && (
+          <button
+            onClick={() => goToNeighbor(neighbors.prevId)}
+            aria-label="Média précédent"
+            className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white active:bg-black/60"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+          </button>
+        )}
+        {neighbors.nextId && (
+          <button
+            onClick={() => goToNeighbor(neighbors.nextId)}
+            aria-label="Média suivant"
+            className="absolute right-2 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white active:bg-black/60"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          </button>
         )}
       </div>
 

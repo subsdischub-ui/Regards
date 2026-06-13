@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import ReactionButton from './reaction-button';
 import DownloadButton from './download-button';
+import { mediaHref } from '@/lib/feed-cache';
 
 type Props = {
   id: string;
@@ -14,6 +15,9 @@ type Props = {
   reactionCount?: number;
   commentCount?: number;
   hasReacted?: boolean;
+  // The context key this card belongs to ('all', 'guest:<id>'...). Threaded
+  // into the media link so the detail view can offer ‹ › arrows and restore scroll.
+  feedContext?: string;
 };
 
 export default function MediaCard({
@@ -28,13 +32,15 @@ export default function MediaCard({
   reactionCount = 0,
   commentCount = 0,
   hasReacted = false,
+  feedContext,
 }: Props) {
   const displayUrl = thumbnailUrl || fileUrl;
   const time = takenAt ? new Date(takenAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '';
   const isVideo = fileType.startsWith('video/');
+  const href = mediaHref(id, feedContext);
 
   return (
-    <div className="bg-bg-card rounded-card overflow-hidden" data-testid="media-card">
+    <div className="bg-bg-card rounded-card overflow-hidden" data-testid="media-card" data-media-id={id}>
       {/* Header */}
       <div className="flex items-center gap-2 px-4 py-3">
         <Link href={`/feed?guest=${guest?.id}`}>
@@ -55,7 +61,7 @@ export default function MediaCard({
       </div>
 
       {/* Media */}
-      <Link href={`/media/${id}`}>
+      <Link href={href}>
         {isVideo ? (
           <div className="relative aspect-video bg-bg-secondary">
             <img src={`/api/media/file/${displayUrl}`} alt="" className="h-full w-full object-cover" />
@@ -73,7 +79,7 @@ export default function MediaCard({
       {/* Actions */}
       <div className="flex items-center gap-3 px-4 py-2">
         <ReactionButton mediaId={id} initialCount={reactionCount} initialReacted={hasReacted} />
-        <Link href={`/media/${id}`} className="flex items-center gap-1 text-text-tertiary">
+        <Link href={href} className="flex items-center gap-1 text-text-tertiary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>

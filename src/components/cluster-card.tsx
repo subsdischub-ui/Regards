@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { mediaHref } from '@/lib/feed-cache';
 
 type ClusterItem = {
   id: string;
@@ -7,10 +8,19 @@ type ClusterItem = {
   guest: { id: string; name: string } | null;
 };
 
-export default function ClusterCard({ items, time }: { items: ClusterItem[]; time: string }) {
+export default function ClusterCard({
+  items,
+  time,
+  feedContext,
+}: {
+  items: ClusterItem[];
+  time: string;
+  feedContext?: string;
+}) {
   const displayTime = new Date(time).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   const main = items[0];
   const rest = items.slice(1, 3);
+  const hrefFor = (id: string) => mediaHref(id, feedContext);
 
   return (
     <div className="rounded-card overflow-hidden bg-bg-secondary p-3">
@@ -28,7 +38,7 @@ export default function ClusterCard({ items, time }: { items: ClusterItem[]; tim
 
       {/* Grid */}
       <div className="flex gap-1.5">
-        <Link href={`/media/${main.id}`} className="flex-[2]">
+        <Link href={hrefFor(main.id)} className="flex-[2]" data-media-id={main.id}>
           <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
             <img
               src={`/api/media/file/${main.thumbnailUrl || main.fileUrl}`}
@@ -46,7 +56,7 @@ export default function ClusterCard({ items, time }: { items: ClusterItem[]; tim
         </Link>
         <div className="flex flex-1 flex-col gap-1.5">
           {rest.map((item) => (
-            <Link key={item.id} href={`/media/${item.id}`} className="flex-1">
+            <Link key={item.id} href={hrefFor(item.id)} className="flex-1" data-media-id={item.id}>
               <div className="relative h-full overflow-hidden rounded-lg">
                 <img
                   src={`/api/media/file/${item.thumbnailUrl || item.fileUrl}`}
