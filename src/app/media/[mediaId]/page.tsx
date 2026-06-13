@@ -139,14 +139,23 @@ export default function MediaDetailPage() {
         onTouchEnd={onTouchEnd}
       >
         {isVideo ? (
+          // poster shows the thumbnail instantly; preload="metadata" fetches
+          // only the header (not the whole file — wedding clips can be 100s of
+          // MB) so opening is fast. The bytes stream on play, via Range.
           <video
             src={`/api/media/file/${media.fileUrl}`}
+            poster={media.thumbnailUrl ? `/api/media/file/${media.thumbnailUrl}` : undefined}
+            preload="metadata"
             controls
+            playsInline
             className="max-h-[70vh] w-full object-contain"
           />
         ) : (
+          // Display the thumbnail (≈800px, ~150KB) instead of the full original
+          // (up to several MB) — sharp enough on phones and near-instant. The
+          // full-resolution file stays available via the download button.
           <img
-            src={`/api/media/file/${media.fileUrl}`}
+            src={`/api/media/file/${media.thumbnailUrl || media.fileUrl}`}
             alt=""
             className="max-h-[70vh] w-full object-contain"
           />
