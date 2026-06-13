@@ -6,6 +6,30 @@ export async function getAllMoments() {
   return db.query.moments.findMany({ orderBy: [asc(moments.startTime)] });
 }
 
+// Full media list of one moment, chronological (as the moment unfolded), for
+// the moment detail view. Reuses the same membership rule as the timeline.
+export async function getMomentMedia(momentId: string) {
+  const moment = await db.query.moments.findFirst({ where: eq(moments.id, momentId) });
+  if (!moment) return null;
+
+  const items = await db
+    .select({
+      id: media.id,
+      thumbnailUrl: media.thumbnailUrl,
+      fileUrl: media.fileUrl,
+      fileType: media.fileType,
+      takenAt: media.takenAt,
+      guestId: media.guestId,
+      guestName: guests.name,
+    })
+    .from(media)
+    .leftJoin(guests, eq(media.guestId, guests.id))
+    .where(mediaInMoment(moment))
+    .orderBy(sql`coalesce(${media.takenAt}, ${media.uploadedAt}) asc`);
+
+  return { moment, items };
+}
+
 // A media belongs to a moment if the guest picked it explicitly at upload
 // (momentId), or — for media without an explicit choice — if its takenAt
 // (EXIF / upload time) falls within the moment's time window.

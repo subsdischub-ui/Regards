@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import MomentNode from '@/components/moment-node';
 
 export default function MomentsPage() {
@@ -19,16 +20,21 @@ export default function MomentsPage() {
 
       <div className="p-5">
         {moments.map((m, i) => (
-          <MomentNode
+          <Link
             key={m.id}
-            label={m.label}
-            startTime={m.startTime}
-            endTime={m.endTime}
-            photoCount={m.photoCount}
-            guestCount={m.guestCount}
-            previews={m.previews}
-            isLast={i === moments.length - 1}
-          />
+            href={`/moments/${m.id}`}
+            className="block transition-opacity active:opacity-60"
+          >
+            <MomentNode
+              label={m.label}
+              startTime={m.startTime}
+              endTime={m.endTime}
+              photoCount={m.photoCount}
+              guestCount={m.guestCount}
+              previews={m.previews}
+              isLast={i === moments.length - 1}
+            />
+          </Link>
         ))}
       </div>
     </div>
