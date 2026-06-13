@@ -32,6 +32,10 @@ services:
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
       MINIO_BUCKET: regards
       MINIO_USE_SSL: "false"
+      # Optional public storage host. When set (in Dokploy env), media is served
+      # via presigned URLs straight from storage instead of proxying through the
+      # app. Default empty → safe proxy mode. See deploy/README.md § Performance.
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-}
       GOOGLE_SERVICE_ACCOUNT_KEY: ${GOOGLE_SERVICE_ACCOUNT_KEY}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}

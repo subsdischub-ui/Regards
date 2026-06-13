@@ -52,6 +52,15 @@ export function contentDispositionAttachment(filename: string): string {
 }
 
 /**
+ * Last path segment of a storage key, used as a download filename. `|| 'file'`
+ * (not `??`) so a trailing slash — which yields an empty segment — also falls
+ * back rather than producing an empty filename.
+ */
+export function filenameFromKey(key: string): string {
+  return key.split('/').pop() || 'file';
+}
+
+/**
  * A presigned GET URL on the public storage host, or null when no public
  * endpoint is configured (callers then fall back to the `/api/media/file`
  * proxy). Range requests are honoured by object storage: the browser re-sends
@@ -70,7 +79,7 @@ export async function getPublicMediaUrl(
     ...(opts?.download
       ? {
           ResponseContentDisposition: contentDispositionAttachment(
-            opts.filename ?? key.split('/').pop() ?? 'file',
+            opts.filename ?? filenameFromKey(key),
           ),
         }
       : {}),
