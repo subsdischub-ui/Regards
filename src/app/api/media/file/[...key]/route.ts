@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { s3Client, BUCKET, getPublicMediaUrl, contentDispositionAttachment } from '@/lib/minio';
+import { s3Client, BUCKET, getPublicMediaUrl, contentDispositionAttachment, filenameFromKey } from '@/lib/minio';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -50,8 +50,7 @@ export async function GET(
     if (obj.ETag) headers['ETag'] = obj.ETag;
     if (isPartial) headers['Content-Range'] = obj.ContentRange as string;
     if (download) {
-      const filename = fileKey.split('/').pop() ?? 'file';
-      headers['Content-Disposition'] = contentDispositionAttachment(filename);
+      headers['Content-Disposition'] = contentDispositionAttachment(filenameFromKey(fileKey));
     }
 
     const webStream = (obj.Body as { transformToWebStream: () => ReadableStream }).transformToWebStream();

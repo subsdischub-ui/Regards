@@ -4,7 +4,7 @@ import { db } from '@/lib/db';
 import { media, guests } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { s3Client, BUCKET } from '@/lib/minio';
+import { s3Client, BUCKET, contentDispositionAttachment } from '@/lib/minio';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createReadStream, createWriteStream } from 'node:fs';
@@ -82,7 +82,7 @@ export async function GET() {
     return new Response(Readable.toWeb(fileStream) as ReadableStream, {
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': 'attachment; filename="regards-album.zip"',
+        'Content-Disposition': contentDispositionAttachment('regards-album.zip'),
         'Content-Length': String(size),
       },
     });
