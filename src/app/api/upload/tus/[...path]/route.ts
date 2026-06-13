@@ -1,14 +1,9 @@
 import { Server } from '@tus/server';
 import { S3Store } from '@tus/s3-store';
-import { s3Client, BUCKET, ensureBucket } from '@/lib/minio';
-import { db } from '@/lib/db';
-import { media } from '@/lib/db/schema';
-import { enqueueProcessing } from '@/lib/processing';
+import { BUCKET, ensureBucket } from '@/lib/minio';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 let tusServer: Server | null = null;
 
@@ -20,62 +15,27 @@ async function getTusServer() {
   const store = new S3Store({
     s3ClientConfig: {
       endpoint: `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}`,
-      region: 'us-east-1', 
+      region: 'us-east-1',
       credentials: {
         accessKeyId: process.env.MINIO_ACCESS_KEY!,
         secretAccessKey: process.env.MINIO_SECRET_KEY!,
       },
       forcePathStyle: true, bucket: BUCKET,
     },
-    
+
     partSize: 8 * 1024 * 1024, // 8MB parts
   });
 
+  // tus only transfers and stores the bytes here. Creating the media row is a
+  // separate, explicit step (`POST /api/upload/finalize`) the client triggers
+  // once EVERY file has fully uploaded. Decoupling means an interrupted upload
+  // can never produce a half-written, unplayable media — finalize verifies the
+  // stored object's size before committing it. The S3 object key is the tus
+  // upload id (no prefix), which the client reads from `upload.url`.
   tusServer = new Server({
     path: '/api/upload/tus',
     datastore: store,
     respectForwardedHeaders: true,
-    async onUploadFinish(req, upload: any) {
-      const metadata = upload.metadata;
-      const guestId = metadata?.guest_id;
-      const caption = metadata?.caption || null;
-      const challengeId = metadata?.challenge_id || null;
-      // Guard with a UUID check: a malformed value would make the whole
-      // insert fail with an FK/cast error after the bytes are already stored.
-      const momentId = UUID_RE.test(metadata?.moment_id || '') ? metadata.moment_id : null;
-      const fileType = metadata?.filetype || 'application/octet-stream';
-      const fileName = metadata?.filename || 'unknown';
-
-      if (!guestId) {
-        throw { status_code: 400, body: 'guest_id metadata required' };
-      }
-
-      // Insert media record.
-      // `@tus/s3-store` writes the upload object to S3 at key = upload.id
-      // (no prefix). Storing `media/originals/${upload.id}` in DB created a
-      // mismatch: the file-serving proxy and the post-processing job both
-      // looked at a path that didn't exist → 404 + sharp crash + processing
-      // stuck in 'pending'/'error' + media never appeared in /feed.
-      // Aligning fileUrl to the actual S3 key fixes the whole chain.
-      // (Thumbnails keep their own `media/thumbnails/...` prefix because
-      // processing.ts writes them with explicit PutObjectCommand keys.)
-      const fileUrl = upload.id;
-      const [record] = await db.insert(media).values({
-        guestId,
-        fileUrl,
-        fileType,
-        fileSize: upload.size ? Number(upload.size) : null,
-        caption,
-        challengeId: challengeId || null,
-        momentId,
-        processingStatus: 'pending',
-      }).returning();
-
-      // Queue async processing (thumbnail, EXIF, etc.)
-      enqueueProcessing(record.id, fileUrl, fileType);
-
-      return { status_code: 204 };
-    },
   });
 
   return tusServer;

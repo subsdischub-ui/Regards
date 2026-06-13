@@ -4,19 +4,29 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import UploadPreview from '@/components/upload-preview';
 
-type FileWithCaption = { file: File; preview: string; caption: string };
+export type UploadItem = {
+  id: string;
+  file: File;
+  preview: string;
+  caption: string;
+  status: 'uploading' | 'done' | 'error';
+  progress: number; // 0..100
+  key?: string; // S3 object key, set once the upload completes
+};
 
 export default function UploadPage() {
   const router = useRouter();
-  const [files, setFiles] = useState<FileWithCaption[]>([]);
+  const [files, setFiles] = useState<UploadItem[]>([]);
   const [challengeId, setChallengeId] = useState('');
   const [challenges, setChallenges] = useState<any[]>([]);
   const [momentId, setMomentId] = useState('');
   const [moments, setMoments] = useState<any[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [finalizing, setFinalizing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const idRef = useRef(0);
+  // Live tus upload handles, so a stuck file can be aborted when removed.
+  const uploadsRef = useRef<Map<string, { abort: () => void }>>(new Map());
 
   useEffect(() => {
     fetch('/api/challenges')
@@ -27,88 +37,169 @@ export default function UploadPage() {
       .then(setMoments);
   }, []);
 
+  // Abort any in-flight uploads if the user leaves mid-transfer.
+  useEffect(() => {
+    const uploads = uploadsRef.current;
+    return () => {
+      uploads.forEach((u) => {
+        try {
+          u.abort();
+        } catch {}
+      });
+      uploads.clear();
+    };
+  }, []);
+
   function formatHour(iso: string) {
     return new Date(iso)
       .toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
       .replace(':', 'h');
   }
 
+  function patch(id: string, changes: Partial<UploadItem>) {
+    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...changes } : f)));
+  }
+
+  // Start transferring a file's bytes to S3 immediately on add. The media row is
+  // NOT created here — that happens on "Envoyer" via finalize, once all files
+  // are fully uploaded.
+  async function startUpload(item: UploadItem) {
+    const { Upload } = await import('tus-js-client');
+    const guestId = localStorage.getItem('guest_id') || '';
+
+    const upload = new Upload(item.file, {
+      // Path segment 'files' is required: the catch-all route demands ≥1 path
+      // segment ('/api/upload/tus' alone 404s after Next's 308 redirect).
+      endpoint: '/api/upload/tus/files',
+      retryDelays: [0, 1000, 3000, 5000],
+      metadata: {
+        filename: item.file.name,
+        filetype: item.file.type,
+        guest_id: guestId,
+      },
+      onProgress: (sent, totalBytes) => {
+        patch(item.id, { progress: totalBytes ? Math.round((sent / totalBytes) * 100) : 0 });
+      },
+      onSuccess: () => {
+        // The S3 key is the tus upload id — the last segment of the upload URL.
+        const key = upload.url ? upload.url.split('/').pop() || undefined : undefined;
+        patch(item.id, { status: key ? 'done' : 'error', progress: 100, key });
+        uploadsRef.current.delete(item.id);
+      },
+      onError: () => {
+        patch(item.id, { status: 'error' });
+        uploadsRef.current.delete(item.id);
+      },
+    });
+
+    uploadsRef.current.set(item.id, upload);
+    upload.start();
+  }
+
   function handleFiles(newFiles: FileList | null) {
     if (!newFiles) return;
-    const additions = Array.from(newFiles).map((file) => ({
+    const additions: UploadItem[] = Array.from(newFiles).map((file) => ({
+      id: `f${++idRef.current}`,
       file,
       preview: URL.createObjectURL(file),
       caption: '',
+      status: 'uploading' as const,
+      progress: 0,
     }));
     setFiles((prev) => [...prev, ...additions]);
+    additions.forEach(startUpload);
   }
 
-  function handleCaptionChange(index: number, caption: string) {
-    setFiles((prev) => prev.map((f, i) => (i === index ? { ...f, caption } : f)));
+  function handleCaptionChange(id: string, caption: string) {
+    patch(id, { caption });
   }
 
-  function handleRemove(index: number) {
+  function handleRemove(id: string) {
+    const up = uploadsRef.current.get(id);
+    if (up) {
+      try {
+        up.abort();
+      } catch {}
+      uploadsRef.current.delete(id);
+    }
     setFiles((prev) => {
-      URL.revokeObjectURL(prev[index].preview);
-      return prev.filter((_, i) => i !== index);
+      const target = prev.find((f) => f.id === id);
+      if (target) URL.revokeObjectURL(target.preview);
+      return prev.filter((f) => f.id !== id);
     });
   }
 
-  async function handleUpload() {
-    if (files.length === 0) return;
-    setUploading(true);
+  const total = files.length;
+  const doneCount = files.filter((f) => f.status === 'done').length;
+  const anyUploading = files.some((f) => f.status === 'uploading');
+  const anyError = files.some((f) => f.status === 'error');
+  const allDone = total > 0 && doneCount === total;
+  const overallProgress = total
+    ? Math.round(files.reduce((sum, f) => sum + (f.status === 'done' ? 100 : f.progress), 0) / total)
+    : 0;
+
+  async function handleSend() {
+    if (!allDone || finalizing) return;
+    setFinalizing(true);
 
     const guestId = localStorage.getItem('guest_id') || '';
-    let uploaded = 0;
+    const items = files
+      .filter((f) => f.status === 'done' && f.key)
+      .map((f) => ({
+        key: f.key,
+        fileType: f.file.type,
+        fileSize: f.file.size,
+        caption: f.caption,
+        challengeId: challengeId || null,
+        momentId: momentId || null,
+      }));
 
-    for (const f of files) {
-      try {
-        // Use tus upload
-        const { Upload } = await import('tus-js-client');
+    try {
+      const res = await fetch('/api/upload/finalize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, guestId }),
+      });
+      if (!res.ok) throw new Error('finalize failed');
+      const data = await res.json();
+      const failed: string[] = data.failedKeys ?? [];
 
-        await new Promise<void>((resolve, reject) => {
-          const upload = new Upload(f.file, {
-            // Path segment 'files' is required: the catch-all route at
-            // [...path]/route.ts demands ≥1 path segment, and Next.js
-            // 308-redirects '/api/upload/tus/' → '/api/upload/tus' (no slash)
-            // which then 404s. Hitting '/api/upload/tus/files' matches the
-            // catch-all (path=['files']) and reaches the TUS handler. The
-            // 'files' label is arbitrary and not interpreted server-side.
-            endpoint: '/api/upload/tus/files',
-            retryDelays: [0, 1000, 3000, 5000],
-            metadata: {
-              filename: f.file.name,
-              filetype: f.file.type,
-              guest_id: guestId,
-              caption: f.caption || '',
-              challenge_id: challengeId || '',
-              moment_id: momentId || '',
-            },
-            onProgress: (bytesUploaded, bytesTotal) => {
-              const fileProgress = (bytesUploaded / bytesTotal) * 100;
-              const totalProgress = ((uploaded * 100 + fileProgress) / files.length);
-              setProgress(Math.round(totalProgress));
-            },
-            onSuccess: () => {
-              uploaded++;
-              resolve();
-            },
-            onError: (error) => {
-              console.error('Upload error:', error);
-              reject(error);
-            },
-          });
-
-          upload.start();
-        });
-      } catch (err) {
-        console.error('Upload failed:', err);
+      if (failed.length === 0) {
+        router.push('/feed');
+        return;
       }
-    }
 
-    setUploading(false);
-    router.push('/feed');
+      // Some objects were incomplete: drop the ones that went through, keep the
+      // failures flagged so the user can remove them and retry.
+      setFiles((prev) => {
+        const kept: UploadItem[] = [];
+        for (const f of prev) {
+          const sentOk = f.key && !failed.includes(f.key);
+          if (sentOk) {
+            URL.revokeObjectURL(f.preview);
+            continue;
+          }
+          kept.push(f.key && failed.includes(f.key) ? { ...f, status: 'error' } : f);
+        }
+        return kept;
+      });
+      setFinalizing(false);
+      alert(
+        `${failed.length} fichier(s) incomplet(s) n'ont pas été envoyés. Retirez-les, puis réessayez.`
+      );
+    } catch {
+      setFinalizing(false);
+      alert("L'envoi a échoué. Vérifiez votre connexion et réessayez.");
+    }
   }
+
+  const sendLabel = finalizing
+    ? 'Envoi...'
+    : anyUploading
+      ? `Téléchargement... ${doneCount}/${total}`
+      : anyError
+        ? 'Retirez les fichiers en échec'
+        : `Envoyer ${total} média${total > 1 ? 's' : ''}`;
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -223,7 +314,7 @@ export default function UploadPage() {
               onClick={() => fileInputRef.current?.click()}
               className="text-sm text-primary"
             >
-              + Ajouter d'autres fichiers
+              + Ajouter d&apos;autres fichiers
             </button>
           </>
         )}
@@ -232,17 +323,26 @@ export default function UploadPage() {
       {/* Submit */}
       {files.length > 0 && (
         <div className="border-t border-border px-5 py-4">
-          {uploading && (
-            <div className="mb-3 h-2 overflow-hidden rounded-full bg-bg-secondary">
-              <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${progress}%` }} />
-            </div>
+          {!allDone && (
+            <>
+              <div className="mb-1.5 flex items-center justify-between text-[11px] text-text-secondary">
+                <span>{doneCount}/{total} média(s) téléchargé(s)</span>
+                {anyUploading && <span>{overallProgress}%</span>}
+              </div>
+              <div className="mb-3 h-2 overflow-hidden rounded-full bg-bg-secondary">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${overallProgress}%` }}
+                />
+              </div>
+            </>
           )}
           <button
-            onClick={handleUpload}
-            disabled={uploading}
+            onClick={handleSend}
+            disabled={!allDone || finalizing}
             className="w-full rounded-lg bg-primary py-3.5 text-[15px] font-medium text-white disabled:opacity-50"
           >
-            {uploading ? `Envoi en cours... ${progress}%` : `Envoyer ${files.length} fichier${files.length > 1 ? 's' : ''}`}
+            {sendLabel}
           </button>
         </div>
       )}
