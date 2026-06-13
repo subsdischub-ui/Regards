@@ -18,6 +18,9 @@ function FeedContent() {
   const guestFilter = searchParams.get('guest') ?? undefined;
   const { items, loading, hasMore, loadMore, prepend, restoredTarget, consumeTarget } =
     useInfiniteFeed(guestFilter);
+  // The context key for this feed ('all' | 'guest:<id>'). Derived once and reused
+  // by the scroll save/restore effects and threaded into every card.
+  const cacheKey = feedCacheKey(guestFilter);
   const [guests, setGuests] = useState<any[]>([]);
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -35,7 +38,7 @@ function FeedContent() {
   // images settle. Falls back to centering the viewed media if no offset stored.
   useLayoutEffect(() => {
     if (!restoredTarget || items.length === 0) return;
-    const y = loadScrollY(feedCacheKey(guestFilter));
+    const y = loadScrollY(cacheKey);
     if (y != null) {
       window.scrollTo(0, y);
     } else {
@@ -44,18 +47,17 @@ function FeedContent() {
       if (el) el.scrollIntoView({ block: 'center' });
     }
     consumeTarget();
-  }, [restoredTarget, items.length, consumeTarget, guestFilter]);
+  }, [restoredTarget, items.length, consumeTarget, cacheKey]);
 
   // Continuously remember the scroll offset (throttled to one write per frame)
   // so the restore above has an exact target whichever way the user leaves.
   useEffect(() => {
-    const key = feedCacheKey(guestFilter);
     let raf = 0;
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        saveScrollY(key, window.scrollY);
+        saveScrollY(cacheKey, window.scrollY);
       });
     };
     window.addEventListener('scroll', onScroll, { passive: true });
@@ -63,7 +65,7 @@ function FeedContent() {
       window.removeEventListener('scroll', onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [guestFilter]);
+  }, [cacheKey]);
 
   // Infinite scroll
   useEffect(() => {
@@ -131,7 +133,7 @@ function FeedContent() {
                 key={item.items[0]?.id ?? `cluster-${i}`}
                 items={item.items}
                 time={item.time}
-                feedContext={feedCacheKey(guestFilter)}
+                feedContext={cacheKey}
               />
             );
           }
@@ -152,7 +154,7 @@ function FeedContent() {
               reactionCount={m.reactionCount}
               commentCount={m.commentCount}
               hasReacted={m.hasReacted}
-              feedContext={feedCacheKey(guestFilter)}
+              feedContext={cacheKey}
             />
           );
         })}

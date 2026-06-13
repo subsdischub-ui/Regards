@@ -87,7 +87,11 @@ function MediaCard({
           <img
             src={`/api/media/file/${displayUrl}`}
             alt=""
-            className="w-full object-cover"
+            // Known dimensions → exact ratio + cover for a uniform feed. Unknown
+            // dimensions → reserve a 1:1 box for scroll-restore stability, but
+            // `contain` (not `cover`) so the rare dimensionless image is
+            // letterboxed whole rather than cropped to a square.
+            className={`w-full ${width && height ? 'object-cover' : 'object-contain'}`}
             style={{ aspectRatio: width && height ? `${width} / ${height}` : '1 / 1' }}
             loading="lazy"
           />

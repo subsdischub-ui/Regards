@@ -50,6 +50,7 @@ export function useSSE(handlers: Record<string, SSEHandler>) {
     refCount++;
     const events = Object.keys(handlersRef.current);
     const wrappers: Record<string, SSEHandler> = {};
+    // 1. Register this subscriber's handlers in the shared listener map.
     for (const event of events) {
       const w: SSEHandler = (data) => handlersRef.current[event]?.(data);
       wrappers[event] = w;
@@ -59,9 +60,13 @@ export function useSSE(handlers: Record<string, SSEHandler>) {
         listeners.set(event, set);
       }
       set.add(w);
-      ensureConnection();
-      attachEvent(event);
     }
+    // 2. Open the shared connection once, then ensure each of THIS subscriber's
+    //    events is attached — ensureConnection() only wires the listener keys
+    //    that existed at creation time, so a later subscriber's new event still
+    //    needs attachEvent() (idempotent via the `attached` guard).
+    ensureConnection();
+    for (const event of events) attachEvent(event);
 
     return () => {
       for (const event of Object.keys(wrappers)) {

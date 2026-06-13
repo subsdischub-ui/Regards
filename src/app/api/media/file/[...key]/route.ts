@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GetObjectCommand } from '@aws-sdk/client-s3';
-import { s3Client, BUCKET, getPublicMediaUrl } from '@/lib/minio';
+import { s3Client, BUCKET, getPublicMediaUrl, contentDispositionAttachment } from '@/lib/minio';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -19,11 +19,17 @@ export async function GET(
 
   // When a public storage endpoint is configured, hand the browser a presigned
   // URL and let it fetch bytes straight from object storage — Node never touches
-  // the payload (it just signs + 307s). Range/seek and caching are handled by
-  // storage. Falls through to the streaming proxy when not configured.
+  // the payload (it just signs + 307s). The browser re-sends its Range header
+  // when it follows the redirect, so seeking still works. We mark the redirect
+  // itself cacheable for an hour (< the 24h presign TTL) so a returning visitor
+  // reuses the cached redirect + cached object instead of re-signing and
+  // re-downloading every asset on each view. Falls through to the streaming
+  // proxy when not configured.
   const directUrl = await getPublicMediaUrl(fileKey, { download });
   if (directUrl) {
-    return NextResponse.redirect(directUrl, 307);
+    const res = NextResponse.redirect(directUrl, 307);
+    res.headers.set('Cache-Control', 'public, max-age=3600');
+    return res;
   }
 
   try {
@@ -45,7 +51,7 @@ export async function GET(
     if (isPartial) headers['Content-Range'] = obj.ContentRange as string;
     if (download) {
       const filename = fileKey.split('/').pop() ?? 'file';
-      headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+      headers['Content-Disposition'] = contentDispositionAttachment(filename);
     }
 
     const webStream = (obj.Body as { transformToWebStream: () => ReadableStream }).transformToWebStream();

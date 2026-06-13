@@ -303,6 +303,18 @@ toute la bande passante média sur l'app. Pour l'éliminer :
    publique : le navigateur télécharge directement depuis MinIO, Next.js ne fait que
    signer.
 
+Détails d'implémentation (pour éviter les régressions de cache déjà rencontrées) :
+
+- Le **307 est lui-même cacheable** (`Cache-Control: public, max-age=3600`) et la
+  presigned URL est valide **24 h** : un visiteur qui revient réutilise le redirect
+  *et* l'objet depuis son cache navigateur, au lieu de re-signer + re-télécharger
+  chaque image à chaque vue (sinon le mode direct serait plus lent que le proxy en
+  visite répétée).
+- Le **Range/seek** marche : le navigateur renvoie son header `Range` en suivant le
+  307, et la signature ne couvre que `host`, donc MinIO l'accepte (→ 206). ⚠️ Si un
+  CDN/proxy est placé devant le endpoint public et signe `Range`, la lecture vidéo
+  casserait — à tester avant d'activer dans ce cas.
+
 > ⚠️ **NE JAMAIS** mettre `minio:9000` (hôte interne) dans `MINIO_PUBLIC_ENDPOINT` :
 > c'est exactement le bug qui avait cassé toutes les images. L'URL doit être joignable
 > depuis un téléphone. Laisser vide = comportement proxy actuel, sûr.

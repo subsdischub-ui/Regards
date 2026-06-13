@@ -33,13 +33,31 @@ const publicClient = PUBLIC_ENDPOINT
     })
   : null;
 
-/** True when media can be served directly from object storage (proxy bypassed). */
-export const MEDIA_DIRECT = Boolean(publicClient);
+// Presigned URLs are valid for 24h. The proxy/redirect that hands them out is
+// itself browser-cacheable for a shorter window (see the media route), so a
+// returning visitor reuses the same signed URL from cache rather than minting a
+// fresh one every load. The long validity also keeps a media element on a tab
+// left open for hours from hitting an expired URL mid-seek.
+const PRESIGN_TTL_SECONDS = 24 * 60 * 60;
 
 /**
- * A short-lived presigned GET URL on the public storage host, or null when no
- * public endpoint is configured (callers then fall back to the `/api/media/file`
- * proxy). Range requests and browser caching are handled by object storage.
+ * Build a `Content-Disposition: attachment` value that survives quotes and
+ * non-ASCII (e.g. accented French filenames): an ASCII-sanitised `filename`
+ * fallback plus an RFC 5987 `filename*` with the real UTF-8 name. Shared by the
+ * presign path and the streaming proxy so download names never diverge.
+ */
+export function contentDispositionAttachment(filename: string): string {
+  const ascii = filename.replace(/[\\"]/g, '_').replace(/[^\x20-\x7e]/g, '_');
+  return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(filename)}`;
+}
+
+/**
+ * A presigned GET URL on the public storage host, or null when no public
+ * endpoint is configured (callers then fall back to the `/api/media/file`
+ * proxy). Range requests are honoured by object storage: the browser re-sends
+ * its `Range` header when it follows the redirect, and the signature only pins
+ * `host`, so the unsigned `Range` is accepted (→ 206). Caching is handled by
+ * the redirect that serves this URL.
  */
 export async function getPublicMediaUrl(
   key: string,
@@ -51,11 +69,13 @@ export async function getPublicMediaUrl(
     Key: key,
     ...(opts?.download
       ? {
-          ResponseContentDisposition: `attachment; filename="${opts.filename ?? key.split('/').pop() ?? 'file'}"`,
+          ResponseContentDisposition: contentDispositionAttachment(
+            opts.filename ?? key.split('/').pop() ?? 'file',
+          ),
         }
       : {}),
   });
-  return getSignedUrl(publicClient, cmd, { expiresIn: 3600 });
+  return getSignedUrl(publicClient, cmd, { expiresIn: PRESIGN_TTL_SECONDS });
 }
 
 export async function ensureBucket() {

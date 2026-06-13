@@ -62,7 +62,6 @@ export const media = pgTable('media', {
   driveFileId: text('drive_file_id'),
 }, (table) => [
   index('idx_media_taken_at').on(table.takenAt),
-  index('idx_media_guest').on(table.guestId),
   index('idx_media_challenge').on(table.challengeId),
   index('idx_media_moment').on(table.momentId),
   index('idx_media_not_synced').on(table.driveSynced).where(sql`drive_synced = false`),
@@ -72,7 +71,9 @@ export const media = pgTable('media', {
   // cursor range with a single index scan instead of a seq-scan + sort that grows
   // linearly with the media table.
   index('idx_media_feed').on(table.uploadedAt.desc()).where(sql`processing_status = 'done'`),
-  // Guest-filtered feed: same access path, scoped to one guest.
+  // Guest-filtered feed: same access path, scoped to one guest. Kept non-partial
+  // so it also serves bare `guest_id` lookups (its leftmost prefix) — it fully
+  // supersedes the old single-column idx_media_guest, which was dropped.
   index('idx_media_guest_uploaded').on(table.guestId, table.uploadedAt.desc()),
 ]);
 
