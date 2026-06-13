@@ -121,6 +121,8 @@ function FeedContent() {
               challengeId={m.challengeId}
               guest={m.guest}
               takenAt={m.takenAt}
+              width={m.width}
+              height={m.height}
               reactionCount={m.reactionCount}
               commentCount={m.commentCount}
               hasReacted={m.hasReacted}

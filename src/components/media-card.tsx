@@ -12,6 +12,8 @@ type Props = {
   challengeId: string | null;
   guest: { id: string; name: string; avatarUrl: string | null } | null;
   takenAt: string | null;
+  width?: number | null;
+  height?: number | null;
   reactionCount?: number;
   commentCount?: number;
   hasReacted?: boolean;
@@ -29,6 +31,8 @@ export default function MediaCard({
   challengeId,
   guest,
   takenAt,
+  width,
+  height,
   reactionCount = 0,
   commentCount = 0,
   hasReacted = false,
@@ -72,7 +76,21 @@ export default function MediaCard({
             </div>
           </div>
         ) : (
-          <img src={`/api/media/file/${displayUrl}`} alt="" className="w-full" loading="lazy" />
+          // Reserve the image's space up-front (aspect-ratio from its known
+          // dimensions) so the feed's height is stable before images load.
+          // Without this, lazy images collapse to ~0 height and scroll
+          // restoration on return lands far from the intended media.
+          <div
+            className="relative w-full overflow-hidden bg-bg-secondary"
+            style={{ aspectRatio: width && height ? `${width} / ${height}` : '4 / 3' }}
+          >
+            <img
+              src={`/api/media/file/${displayUrl}`}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+              loading="lazy"
+            />
+          </div>
         )}
       </Link>
 

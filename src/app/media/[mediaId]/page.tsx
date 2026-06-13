@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import ReactionButton from '@/components/reaction-button';
 import DownloadButton from '@/components/download-button';
@@ -48,6 +48,26 @@ export default function MediaDetailPage() {
     // replace, not push: the back button returns straight to the originating
     // list (scrolled to where you stopped), not through every media stepped past.
     router.replace(mediaHref(id, cacheKey));
+  }
+
+  // Swipe left → next, swipe right → previous. This is the primary navigation on
+  // mobile (the arrows are a desktop/affordance fallback). Horizontal-dominant
+  // gestures only, so vertical scrolling on the comments panel isn't hijacked.
+  const touchRef = useRef<{ x: number; y: number } | null>(null);
+  function onTouchStart(e: React.TouchEvent) {
+    const t = e.touches[0];
+    touchRef.current = { x: t.clientX, y: t.clientY };
+  }
+  function onTouchEnd(e: React.TouchEvent) {
+    const start = touchRef.current;
+    touchRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 50 || Math.abs(dx) <= Math.abs(dy)) return;
+    if (dx < 0) goToNeighbor(neighbors.nextId);
+    else goToNeighbor(neighbors.prevId);
   }
 
   // The localStorage check only decides what UI to show; the API re-checks
@@ -113,7 +133,11 @@ export default function MediaDetailPage() {
       </div>
 
       {/* Media */}
-      <div className="relative flex flex-1 items-center justify-center">
+      <div
+        className="relative flex flex-1 items-center justify-center"
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
+      >
         {isVideo ? (
           <video
             src={`/api/media/file/${media.fileUrl}`}
